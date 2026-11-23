@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102a43">
+  <meta name="description" content="Agenda Inteligente: organize compromissos e finanças em um só lugar.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+  <title>Agenda Inteligente</title>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">AI</span><div><strong>Agenda Inteligente</strong><small>Organização simples, vida mais leve</small></div></div>
+    <span class="today-label" id="todayLabel"></span>
+  </header>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <nav aria-label="Menu principal">
+        <button class="nav-item active" data-view="home">⌂ <span>Início</span></button>
+        <button class="nav-item" data-view="agenda">▦ <span>Agenda</span></button>
+        <button class="nav-item" data-view="finance">◈ <span>Financeiro</span></button>
+        <button class="nav-item" data-view="cards">▤ <span>Cartões</span></button>
+      </nav>
+      <div class="sidebar-note"><strong>Seu dia, em ordem.</strong><p>Compromissos e finanças reunidos em um só lugar.</p></div>
+    </aside>
+    <main id="mainContent" class="main-content">
+      <section class="welcome"><div><p class="eyebrow">PAINEL PESSOAL</p><h1>Bom dia!</h1><p class="muted">Aqui está um resumo da sua organização.</p></div><button class="primary-button" id="quickAdd">＋ Novo registro</button></section>
+      <section class="stats-grid" id="statsGrid"></section>
+      <section class="content-grid">
+        <article class="panel"><div class="panel-heading"><div><p class="eyebrow">SUA ROTINA</p><h2>Próximos compromissos</h2></div><button class="text-button" data-go="agenda">Ver agenda →</button></div><div id="upcomingList" class="list-area"></div></article>
+        <article class="panel"><div class="panel-heading"><div><p class="eyebrow">CONTROLE FINANCEIRO</p><h2>Contas a vencer</h2></div><button class="text-button" data-go="finance">Ver financeiro →</button></div><div id="dueList" class="list-area"></div></article>
+      </section>
+      <section class="panel"><div class="panel-heading"><div><p class="eyebrow">ACESSO RÁPIDO</p><h2>O que deseja registrar?</h2></div></div><div class="quick-actions"><button class="quick-card" data-action="event"><span>▦</span><strong>Compromisso</strong><small>Organize seus horários</small></button><button class="quick-card" data-action="bill"><span>◈</span><strong>Conta ou despesa</strong><small>Controle seus pagamentos</small></button><button class="quick-card" data-action="purchase"><span>＋</span><strong>Nova compra</strong><small>Registre parcelas e compras</small></button></div></section>
+    </main>
+  </div>
+  <div id="modalRoot"></div>
+  <script src="app.js"></script>
+</body>
+</html>

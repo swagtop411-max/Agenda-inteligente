@@ -1,6 +1,8 @@
 const KEY="agendaInteligente_v1";
 let db;
 try { db=JSON.parse(localStorage.getItem(KEY)||'{"events":[],"bills":[],"cards":[]}'); } catch { db={events:[],bills:[],cards:[]}; }
+if(!db || typeof db!=="object") db={};
+db={events:Array.isArray(db.events)?db.events:[],bills:Array.isArray(db.bills)?db.bills:[],cards:Array.isArray(db.cards)?db.cards:[]};
 let activeView="home";
 const $=s=>document.querySelector(s);
 const money=n=>Number(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
@@ -58,6 +60,7 @@ function render(){
  }
 }
 document.addEventListener("click",e=>{
+ const quick=e.target.closest("#quickAdd");if(quick){openForm("event");return;}
  const action=e.target.closest("[data-action]");if(action){openForm(action.dataset.action);return;}
  const go=e.target.closest("[data-go]");if(go){setView(go.dataset.go);return;}
  const pay=e.target.closest("[data-pay]");if(pay){let item=db.bills.find(x=>x.id===pay.dataset.pay);if(item){item.paid=!item.paid;save();}return;}

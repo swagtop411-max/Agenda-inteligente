@@ -1,19 +1,56 @@
-# Agenda Inteligente — primeira versão PWA
+# Agenda Inteligente
 
-Protótipo web instalável no Android pelo Chrome após publicação em HTTPS.
+Aplicativo web progressivo (PWA) em português, pensado para uso no celular Android e desktop.
 
-## Recursos incluídos
-- Painel inicial com resumo de compromissos e contas.
-- Cadastro de compromissos.
-- Registro de contas e compras parceladas, com geração automática de parcelas mensais.
-- Cadastro de cartões com limite, fechamento e vencimento.
+## Estado atual
+
+Esta é uma versão inicial funcional para testes individuais. Ela não é um aplicativo Android nativo/APK.
+
+### Funcionalidades disponíveis
+- Painel inicial com resumo de compromissos, contas pendentes, despesas do mês e cartões cadastrados.
+- Cadastro de compromissos com data e horário.
+- Cadastro de contas e compras parceladas, gerando parcelas mensais automaticamente.
+- Cadastro de cartões com limite, fechamento e vencimento informativos.
 - Marcação de parcelas como pagas.
-- Armazenamento local no navegador usando localStorage.
+- Exclusão de compromissos, grupos de parcelas e cartões.
+- Backup dos dados em arquivo JSON e restauração de backup.
+- Instalação como PWA quando publicada em HTTPS e suporte básico offline.
 
-## Limitações importantes
-Esta é uma primeira versão de demonstração. Os dados ficam somente neste navegador/aparelho. Ainda não há login, sincronização, área familiar, convites, permissões, notificações agendadas em segundo plano ou cálculo real de faturas por data de fechamento. Não é um APK nativo. Não use dados bancários reais nesta versão.
+## Armazenamento e privacidade
 
-## Publicação
-No GitHub, abra Settings → Pages → Build and deployment → Deploy from a branch. Selecione a branch main e a pasta /(root), depois Save. O endereço será https://SEU-USUARIO.github.io/Agenda-inteligente/.
+**Os dados ficam apenas no armazenamento local do navegador (localStorage) deste aparelho e perfil de navegador.** Não há servidor, login ou sincronização nesta versão. Se o usuário limpar os dados do navegador, perder o aparelho ou usar outro navegador, os registros podem não estar disponíveis. Faça backups regulares e guarde-os em local seguro.
 
-No Android, abra o endereço no Chrome e escolha Instalar app ou Adicionar à tela inicial.
+Não cadastre senhas bancárias, números completos de cartões, documentos pessoais ou outras informações altamente confidenciais nesta versão.
+
+## Limitações conhecidas
+
+- Não há autenticação por e-mail ou Google.
+- Não há sincronização em nuvem nem compartilhamento familiar.
+- Não há perfis, convites, papéis ou permissões.
+- Não há notificações agendadas em segundo plano.
+- O fechamento e vencimento do cartão são exibidos como dados informativos; as parcelas ainda não são calculadas conforme o ciclo real da fatura.
+- O registro de compras parceladas cria parcelas mensais a partir do primeiro vencimento informado.
+- O limite disponível é uma estimativa simples baseada nas parcelas não pagas cadastradas, não uma integração com o banco ou emissor do cartão.
+
+## Publicar com GitHub Pages
+
+1. Abra **Settings → Pages** no repositório.
+2. Em **Build and deployment**, selecione **Deploy from a branch**.
+3. Escolha a branch **main** e a pasta **/(root)**.
+4. Clique em **Save** e aguarde a publicação.
+5. O endereço esperado é `https://swagtop411-max.github.io/Agenda-inteligente/`.
+
+No Android, abra o endereço no Chrome e use o menu do navegador para **Instalar app** ou **Adicionar à tela inicial** (a opção pode variar conforme o aparelho).
+
+## Próximas etapas de desenvolvimento
+
+1. Criar backend e banco de dados com regras de acesso por usuário.
+2. Implementar login, recuperação de senha e sincronização.
+3. Implementar família compartilhada com privacidade por registro e permissões.
+4. Desenvolver cálculo de faturas por data de fechamento e vencimento.
+5. Implementar notificações e lembretes confiáveis.
+6. Criar testes automatizados e avaliar empacotamento Android nativo.
+
+## Desenvolvimento
+
+O projeto é estático: `index.html`, `styles.css` e `app.js`. O GitHub Actions valida a sintaxe do JavaScript e o JSON do manifesto em cada alteração.

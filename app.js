@@ -165,14 +165,14 @@ function simulateDebtStrategy(items,monthlyBudget,method){
  for(let month=1;month<=360;month++){
   const active=rows.filter(x=>x.balance>0);
   if(!active.length)return {success:true,months:month-1,interest:interest/100,paid:paid/100,schedule,payoffs:rows.filter(x=>x.payoffMonth).map(x=>({title:x.title,month:x.payoffMonth}))};
-  let interestThisMonth=0;
-  for(const x of active){const charge=Math.round(x.balance*x.rate);x.balance+=charge;interest+=charge;interestThisMonth+=charge;}
+  let interestThisMonth=0;const interestById=new Map();
+  for(const x of active){const charge=Math.round(x.balance*x.rate);x.balance+=charge;interest+=charge;interestThisMonth+=charge;interestById.set(x.id,charge);}
   let remaining=budget;
   const minimumTotal=active.reduce((sum,x)=>sum+Math.min(x.balance,x.minimum),0);
   if(minimumTotal>budget)return {success:false,reason:"O valor disponível não cobre as parcelas mínimas das dívidas negociáveis. Negocie os pagamentos mínimos antes de simular."};
   const monthRows=active.map(x=>({id:x.id,title:x.title,interest:0,payment:0,closing:0}));
   const detailById=new Map(monthRows.map(x=>[x.id,x]));
-  for(const x of active){const charge=Math.round(x.balance*x.rate);const d=detailById.get(x.id);d.interest=charge/100;const amount=Math.min(x.balance,x.minimum);x.balance-=amount;remaining-=amount;paid+=amount;d.payment+=amount/100;}
+  for(const x of active){const charge=interestById.get(x.id)||0;const d=detailById.get(x.id);d.interest=charge/100;const amount=Math.min(x.balance,x.minimum);x.balance-=amount;remaining-=amount;paid+=amount;d.payment+=amount/100;}
   const sorted=rows.filter(x=>x.balance>0).sort((a,b)=>a.priority-b.priority||(method==="avalanche"?(b.rate-a.rate||a.balance-b.balance):(a.balance-b.balance||b.rate-a.rate)));
   for(const x of sorted){if(remaining<=0)break;const amount=Math.min(remaining,x.balance);x.balance-=amount;remaining-=amount;paid+=amount;detailById.get(x.id).payment+=amount/100;}
   for(const x of rows){const d=detailById.get(x.id);if(!d)continue;d.closing=x.balance/100;if(x.balance<=0&&!x.payoffMonth)x.payoffMonth=month;}

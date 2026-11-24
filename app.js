@@ -158,7 +158,6 @@ function openDebtPayment(debtId){
 
 function simulateDebtStrategy(items,monthlyBudget,method){
  const rows=items.map(x=>({id:x.id,title:x.title,balance:Math.round(Math.max(0,Number(x.balance)||0)*100),minimum:Math.round(Math.max(0,Number(x.minimum)||0)*100),rate:Math.max(0,Number(x.interest)||0)/100,priority:(x.type==="mandatory"||x.type==="essential")?0:1,payoffMonth:null}));
- const original=rows.reduce((sum,x)=>sum+x.balance,0);
  if(!rows.length)return {months:0,interest:0,paid:0,success:true,schedule:[],payoffs:[]};
  const budget=Math.round(Math.max(0,monthlyBudget)*100);
  if(budget<=0)return {success:false,reason:"Informe um valor disponível para quitar dívidas."};
@@ -171,7 +170,7 @@ function simulateDebtStrategy(items,monthlyBudget,method){
   let remaining=budget;
   const minimumTotal=active.reduce((sum,x)=>sum+Math.min(x.balance,x.minimum),0);
   if(minimumTotal>budget)return {success:false,reason:"O valor disponível não cobre as parcelas mínimas das dívidas negociáveis. Negocie os pagamentos mínimos antes de simular."};
-  const monthRows=active.map(x=>({id:x.id,title:x.title,opening:(x.balance-Math.round(x.balance-x.balance/(1+x.rate)))/100,interest:0,payment:0,closing:0}));
+  const monthRows=active.map(x=>({id:x.id,title:x.title,interest:0,payment:0,closing:0}));
   const detailById=new Map(monthRows.map(x=>[x.id,x]));
   for(const x of active){const charge=Math.round(x.balance*x.rate);const d=detailById.get(x.id);d.interest=charge/100;const amount=Math.min(x.balance,x.minimum);x.balance-=amount;remaining-=amount;paid+=amount;d.payment+=amount/100;}
   const sorted=rows.filter(x=>x.balance>0).sort((a,b)=>a.priority-b.priority||(method==="avalanche"?(b.rate-a.rate||a.balance-b.balance):(a.balance-b.balance||b.rate-a.rate)));

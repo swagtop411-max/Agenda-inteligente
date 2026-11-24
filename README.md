@@ -14,7 +14,7 @@ Esta é uma versão inicial funcional para testes individuais. Ela não é um ap
 - Marcação de parcelas como pagas.
 - Exclusão de compromissos, grupos de parcelas e cartões.
 - Backup dos dados em arquivo JSON e restauração de backup.
-- Instalação como PWA quando publicada em HTTPS e suporte básico offline.
+- Instalação como PWA quando publicada em HTTPS, manifesto com ícones vetoriais e suporte básico offline.
 
 ## Armazenamento e privacidade
 
@@ -47,13 +47,13 @@ Não cadastre senhas bancárias, números completos de cartões, documentos pess
 4. Clique em **Save** e aguarde a publicação.
 5. O endereço esperado é `https://swagtop411-max.github.io/Agenda-inteligente/`.
 
-No Android, abra o endereço no Chrome e use o menu do navegador para **Instalar app** ou **Adicionar à tela inicial** (a opção pode variar conforme o aparelho).
+No Android, abra o endereço no Chrome e use o botão **Instalar** do aplicativo ou o menu do navegador para **Instalar app** / **Adicionar à tela inicial** (a opção pode variar conforme o aparelho). O projeto inclui ícones SVG escaláveis, inclusive uma versão maskable. A instalação ainda deve ser validada em aparelhos reais.
 
 ## Próximas etapas de desenvolvimento
 
 1. Criar backend e banco de dados com regras de acesso por usuário.
-2. Validar autenticação, URLs de redirecionamento, sincronização e migração no dispositivo real.
-3. Implementar família compartilhada com privacidade por registro e permissões.
+2. Validar autenticação, URLs de redirecionamento, sincronização, exclusões e migração no dispositivo real.
+3. Finalizar família compartilhada com privacidade por registro e permissões.
 4. Desenvolver cálculo de faturas por data de fechamento e vencimento.
 5. Implementar notificações e lembretes confiáveis.
 6. Criar testes automatizados e avaliar empacotamento Android nativo.

@@ -746,3 +746,24 @@
 #mainContent:has(.backup-view-title) .backup-sync-meta span{font-size:11px;color:#7b8995}
 #mainContent:has(.backup-view-title) .backup-sync-meta strong{font-size:11px;color:#344c61;text-align:right}
 #mainContent:has(.backup-view-title) #backupSyncNow:disabled{opacity:.55;cursor:not-allowed}
+
+
+/* Central de avisos: leitura rápida de prazos e compromissos */
+#mainContent .notice-center{padding:17px;border-radius:18px;margin:0 0 14px}
+#mainContent .notice-center .panel-heading{align-items:center;margin-bottom:12px}
+#mainContent .notice-center .panel-heading h2{margin:0;color:#20394f;font-size:17px}
+#mainContent .notice-center .panel-heading small{display:block;margin-top:4px;color:#81909e;font-size:11px}
+#mainContent .notice-count{display:grid;place-items:center;min-width:30px;height:30px;padding:0 8px;border-radius:50px;background:#edf4f9;color:#315e80;font-size:12px;font-weight:800}
+#mainContent .notice-list{display:grid;gap:8px}
+#mainContent .notice-item{display:flex;align-items:center;gap:10px;min-width:0;padding:11px 12px;border:1px solid #e8edf2;border-radius:13px;background:#f9fbfd}
+#mainContent .notice-icon{display:grid;place-items:center;flex:0 0 30px;width:30px;height:30px;border-radius:10px;background:#eaf2f8;color:#356b91;font-size:15px;font-weight:850}
+#mainContent .notice-item.overdue{border-color:#f0d7d2;background:#fff8f6}
+#mainContent .notice-item.overdue .notice-icon{background:#fbe7e3;color:#b54d3e}
+#mainContent .notice-item.bill .notice-icon{background:#fff3dc;color:#9b711e}
+#mainContent .notice-copy{display:grid;gap:3px;min-width:0;flex:1}
+#mainContent .notice-copy strong{overflow-wrap:anywhere;color:#263f55;font-size:12px}
+#mainContent .notice-copy small{color:#7c8996;font-size:10px;line-height:1.35}
+#mainContent .notice-item>b{flex-shrink:0;color:#304b62;font-size:11px}
+#mainContent .notice-empty{display:grid;gap:4px;padding:16px 12px;border-radius:12px;background:#f4f8fb;text-align:center}
+#mainContent .notice-empty strong{color:#315e80;font-size:12px}
+#mainContent .notice-empty span{color:#7c8996;font-size:10px;line-height:1.45}

@@ -453,3 +453,12 @@
 .family-invite-success{display:grid;gap:10px}
 .family-invite-success strong{color:#176b4b;font-size:15px}
 .family-invite-success p{margin:0;color:#526779;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+
+/* Navegação compacta do painel financeiro */
+.finance-tabs{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;margin:14px 0 16px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+.finance-tab{flex:0 0 auto;border:1px solid #d9e3eb;background:#f2f6fa;color:#456174;border-radius:999px;padding:11px 16px;font:inherit;font-size:14px;font-weight:650;cursor:pointer;white-space:nowrap}
+.finance-tab.active{background:#1f78b8;border-color:#1f78b8;color:#fff;box-shadow:0 2px 7px rgba(20,70,110,.14)}
+.finance-tab:focus-visible{outline:3px solid rgba(31,120,184,.25);outline-offset:2px}
+.finance-tab-panel[hidden]{display:none!important}
+.finance-tab-panel{min-width:0}
+@media(max-width:520px){.finance-tabs{margin-left:-2px;margin-right:-2px;padding-bottom:10px}.finance-tab{padding:10px 14px;font-size:13px}}

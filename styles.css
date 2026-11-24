@@ -360,3 +360,7 @@
 .forecast-month-values b{color:#334b5f;font-size:13px}
 .forecast-month>small{font-size:11px}
 .forecast-disclaimer{margin:12px 0 0;color:#87939d;font-size:11px;line-height:1.55}
+
+
+/* Compromissos futuros recolhidos por padrão */
+.forecast-disclosure{width:100%}.forecast-disclosure-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;list-style:none;cursor:pointer;padding:2px 0}.forecast-disclosure-summary::-webkit-details-marker{display:none}.forecast-disclosure-summary h2{margin:0 0 6px;font-size:22px}.forecast-disclosure-summary .eyebrow{margin-bottom:6px}.forecast-disclosure-summary .muted{font-size:14px;line-height:1.5}.forecast-disclosure-icon{width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;border-radius:50%;background:#edf5fc;color:var(--blue);font-size:23px;font-weight:700;transition:transform .2s ease}.forecast-disclosure[open] .forecast-disclosure-icon{transform:rotate(180deg)}.forecast-disclosure-content{padding-top:16px}.forecast-disclosure-content:empty{display:none}

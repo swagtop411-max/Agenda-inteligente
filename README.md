@@ -85,7 +85,7 @@ O projeto agora contém:
 - Script `supabase/push_setup.sql` para agendar a verificação a cada 15 minutos usando Supabase Cron e Vault.
 
 **Ainda exige configuração no painel Supabase antes de enviar push real:**
-1. Executar novamente o arquivo `supabase/schema.sql` no SQL Editor para criar as tabelas de inscrições e histórico de notificações.
+1. Executar o arquivo `supabase/push_tables.sql` no SQL Editor para criar as tabelas de inscrições e histórico de notificações.
 2. Publicar a Edge Function `send-push` (pasta `supabase/functions/send-push`).
 3. Configurar os secrets `VAPID_PUBLIC_KEY` e `VAPID_PRIVATE_KEY` na função.
 4. Executar `supabase/push_setup.sql` após substituir o marcador da chave service_role pela chave secreta do projeto. Não publicar essa chave no GitHub, em mensagens ou no código do navegador.

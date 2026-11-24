@@ -737,3 +737,12 @@
 #mainContent:has(.backup-view-title) .backup-safety-panel h3{margin:0 0 7px;font-size:14px}
 #mainContent:has(.backup-view-title) .backup-safety-panel h3:not(:first-child){margin-top:15px}
 @media(max-width:380px){#mainContent:has(.backup-view-title) .backup-actions{grid-template-columns:1fr}#mainContent:has(.backup-view-title) .backup-section-heading{align-items:flex-start;flex-direction:column}}
+
+
+/* Estado de sincronização: conexão, espera e última cópia confirmada */
+#mainContent:has(.backup-view-title) .backup-status.sync-error{background:#fff0ee;color:#a43c32}
+#mainContent:has(.backup-view-title) .backup-status.sync-wait{background:#edf4fb;color:#315e80}
+#mainContent:has(.backup-view-title) .backup-sync-meta{display:flex;justify-content:space-between;gap:10px;align-items:center;margin:12px 0;padding:10px 11px;border-radius:10px;background:#f7f9fb}
+#mainContent:has(.backup-view-title) .backup-sync-meta span{font-size:11px;color:#7b8995}
+#mainContent:has(.backup-view-title) .backup-sync-meta strong{font-size:11px;color:#344c61;text-align:right}
+#mainContent:has(.backup-view-title) #backupSyncNow:disabled{opacity:.55;cursor:not-allowed}

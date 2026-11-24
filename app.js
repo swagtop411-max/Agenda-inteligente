@@ -52,13 +52,13 @@ function openForm(type){
   const count=Math.max(1,Math.min(120,Number(form.elements.installments.value)||1));
   const value=cents(unit.value),sum=value*count;
   sumLabel.textContent="Total das "+count+" parcelas: "+money(sum/100);
-  if(form.elements.amount)form.elements.amount.value=(sum/100).toFixed(2);
+  if(form.elements.amount)form.elements.amount.value=formatMoneyInput((sum/100).toFixed(2).replace(".",","),true);
  }
  function updateUnitFromTotal(){
   if(!unit)return;
   const count=Math.max(1,Math.min(120,Number(form.elements.installments.value)||1));
   const total=cents(form.elements.amount.value);
-  unit.value=(Math.floor(total/count)/100).toFixed(2);
+  unit.value=formatMoneyInput((Math.floor(total/count)/100).toFixed(2).replace(".",","),true);
   updateUnit();
  }
  if(unit){

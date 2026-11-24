@@ -99,6 +99,16 @@ function drawFinancialAlerts(selected,incomes,expenses,incomeTotal,expenseTotal,
  const priorityDebts=db.debts.filter(x=>(x.type==="mandatory"||x.type==="essential")&&Number(x.balance)>0);
  const priorityMinimum=priorityDebts.reduce((n,x)=>n+(Number(x.minimum)||0),0);
  const highRiskSoon=selected===todayKey.slice(0,7)?db.debts.filter(x=>Number(x.balance)>0&&x.risk==="high"&&x.date&&x.date>=todayKey&&x.date<=addDays(todayKey,7)):[];
+ const possibleDuplicates=[];
+ if(selected===todayKey.slice(0,7)){
+  db.debts.forEach(d=>(Array.isArray(d.payments)?d.payments:[]).forEach(p=>{
+   if(p.includeInFinance!==true||!String(p.date||"").startsWith(selected))return;
+   const cents=Math.round((Number(p.amount)||0)*100);
+   const matches=db.bills.filter(b=>String(b.date||"")===String(p.date||"")&&Math.round((Number(b.amount)||0)*100)===cents);
+   if(matches.length)possibleDuplicates.push({debt:d,payment:p,count:matches.length});
+  }));
+ }
+
  const budget=parseMoney(localStorage.getItem("agendaDebtBudget")||"");
  const alerts=[];
  if(incomeTotal<=0&&expenseTotal>0)alerts.push({level:"warning",title:"Renda não registrada",text:"Há despesas cadastradas, mas nenhuma receita neste mês. Registre sua renda para melhorar a análise."});
@@ -107,6 +117,7 @@ function drawFinancialAlerts(selected,incomes,expenses,incomeTotal,expenseTotal,
  else if(incomeTotal>0&&ratio>=65)alerts.push({level:"attention",title:"Atenção ao comprometimento da renda",text:"As despesas representam "+ratio.toFixed(1).replace(".",",")+"% das receitas. Acompanhe os próximos vencimentos antes de assumir novos gastos."});
  if(overdue.length)alerts.push({level:"critical",title:overdue.length+" conta(s) vencida(s)",text:"Existem despesas pendentes com vencimento anterior a hoje. Confira as consequências do atraso e contate o credor para verificar opções."});
  if(highRiskSoon.length)alerts.push({level:"warning",title:"Obrigação de alto risco próxima do vencimento",text:highRiskSoon.map(x=>x.title).join(", ")+". Confira o contrato e procure o credor antes do vencimento."});
+ if(possibleDuplicates.length)alerts.push({level:"warning",title:possibleDuplicates.length+" possível(is) lançamento(s) duplicado(s)",text:possibleDuplicates.map(x=>x.debt.title+" · "+money(x.payment.amount)+" em "+fmt(x.payment.date)).join("; ")+". O mesmo valor e data também aparecem em Contas e despesas. Confira o Histórico de pagamentos da dívida e use “Retirar do fluxo de caixa” se for o mesmo pagamento."});
  if(budget>0&&priorityMinimum>budget)alerts.push({level:"warning",title:"Reserva mensal abaixo das obrigações prioritárias",text:"As parcelas mínimas prioritárias cadastradas somam "+money(priorityMinimum)+", acima dos "+money(budget)+" reservados. Avalie uma negociação antes de comprometer o orçamento."});
  if(!alerts.length)alerts.push({level:"good",title:"Nenhum sinal crítico identificado",text:"Pelos lançamentos cadastrados, não há alerta de déficit, vencimento atrasado ou obrigação prioritária acima da reserva informada. Continue atualizando suas contas."});
  const severity={critical:0,warning:1,attention:2,good:3};

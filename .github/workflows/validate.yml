@@ -20,8 +20,8 @@ jobs:
         with:
           node-version: 20
       - name: Check JavaScript syntax
-        run: node --check app.js
+        run: node --check app.js && node --check cloud.js
       - name: Validate web manifest
         run: node -e "JSON.parse(require('fs').readFileSync('manifest.webmanifest','utf8'))"
       - name: Check required app files
-        run: test -f index.html && test -f styles.css && test -f app.js && test -f sw.js
+        run: test -f index.html && test -f styles.css && test -f app.js && test -f cloud.js && test -f sw.js

@@ -7,6 +7,9 @@ db.bills.forEach(x=>{if(!x.category)x.category="Outros";});
 let activeView="home";
 const $=s=>document.querySelector(s);
 const money=n=>Number(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+function parseMoney(value){const raw=String(value??"").trim().replace(/R\$/gi,"").replace(/\s/g,"");if(!raw)return 0;const normalized=raw.includes(",")?raw.replace(/\./g,"").replace(",","."):raw.replace(/\./g,"");const number=Number(normalized);return Number.isFinite(number)?Math.round(number*100)/100:0;}
+function formatMoneyInput(value,complete=false){let raw=String(value??"").replace(/[^0-9,]/g,"");const hasComma=raw.includes(",");const parts=raw.split(",");let integer=(parts[0]||"").replace(/\D/g,"").replace(/^0+(?=\d)/,"");integer=integer.replace(/\B(?=(\d{3})+(?!\d))/g,".");let decimals=(parts[1]||"").replace(/\D/g,"").slice(0,2);if(complete&&!hasComma)decimals="00";if(complete&&hasComma)decimals=decimals.padEnd(2,"0");return integer+(hasComma||complete?","+decimals:"");}
+function bindMoneyInputs(root){root.querySelectorAll("[data-money]").forEach(input=>{input.inputMode="decimal";input.autocomplete="off";input.addEventListener("input",()=>{const start=input.selectionStart,before=input.value;input.value=formatMoneyInput(before,false);try{const delta=input.value.length-before.length;input.setSelectionRange(Math.max(0,(start||0)+delta),Math.max(0,(start||0)+delta));}catch{}});input.addEventListener("blur",()=>{if(input.value)input.value=formatMoneyInput(input.value,true);});});}
 const fmt=d=>new Date(d+"T12:00:00").toLocaleDateString("pt-BR");
 function esc(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function save(){localStorage.setItem(KEY,JSON.stringify(db));render();}
@@ -29,18 +32,21 @@ function openForm(type){
  const fields=cfg.fields.map(([name,label,inputType])=>{
   if(inputType==="select"){const options=db.cards.map(card=>'<option value="'+esc(card.id)+'">'+esc(card.title)+'</option>').join("");return '<div class="field"><label>'+label+'</label><select name="cardId"><option value="">Sem cartão</option>'+options+'</select></div>';}
   if(inputType==="category"){const options=categories.map(cat=>'<option value="'+cat+'">'+cat+'</option>').join("");return '<div class="field"><label>'+label+'</label><select name="category">'+options+'</select></div>';}
-  const attrs=name==="installments"?'min="1" max="120" value="1"':(inputType==="number"?'min="0" step="0.01"':"");
+  const isMoney=name==="amount"||name==="limit";
+  const attrs=name==="installments"?'min="1" max="120" value="1"':(isMoney?'inputmode="decimal" data-money placeholder="0,00"':(inputType==="number"?'min="0" step="0.01"':""));
+  const fieldType=isMoney?"text":inputType;
   const defaultValue=name==="month"?'value="'+new Date().toISOString().slice(0,7)+'"':"";
-  return '<div class="field"><label>'+label+'</label><input name="'+name+'" type="'+inputType+'" required '+attrs+' '+defaultValue+'></div>';
+  return '<div class="field"><label>'+label+'</label><input name="'+name+'" type="'+fieldType+'" required '+attrs+' '+defaultValue+'></div>';
  }).join("");
- const editor=(type==="purchase"||type==="bill")?'<section class="installment-editor"><p class="muted">O valor é dividido automaticamente. Se houver juros, altere o valor de uma parcela e todas acompanharão o mesmo valor.</p><div class="field"><label>Valor de cada parcela (R$)</label><input id="installmentUnit" type="number" min="0" step="0.01" value="0.00"></div><strong id="installmentSum"></strong></section>':"";
+ const editor=(type==="purchase"||type==="bill")?'<section class="installment-editor"><p class="muted">Digite o valor normalmente. Os pontos de milhar e a vírgula dos centavos serão inseridos automaticamente.</p><div class="field"><label>Valor de cada parcela (R$)</label><input id="installmentUnit" type="text" inputmode="decimal" data-money placeholder="0,00"></div><strong id="installmentSum"></strong></section>':"";
  root.innerHTML='<div class="modal-backdrop"><div class="modal"><div class="modal-head"><h2>'+cfg.title+'</h2><button class="close" type="button">×</button></div><form id="recordForm">'+fields+editor+'<button class="primary" type="submit">Salvar registro</button></form></div></div>';
  root.querySelector(".close").onclick=()=>{root.innerHTML="";};
  root.querySelector(".modal-backdrop").onclick=e=>{if(e.target.classList.contains("modal-backdrop"))root.innerHTML="";};
  const form=root.querySelector("#recordForm");
+ bindMoneyInputs(root);
  const unit=root.querySelector("#installmentUnit");
  const sumLabel=root.querySelector("#installmentSum");
- function cents(n){return Math.round((Number(n)||0)*100);}
+ function cents(n){return Math.round(parseMoney(n)*100);}
  function updateUnit(){
   if(!unit)return;
   const count=Math.max(1,Math.min(120,Number(form.elements.installments.value)||1));
@@ -66,9 +72,9 @@ function openForm(type){
   const f=Object.fromEntries(new FormData(form));
   const id=crypto.randomUUID();
   if(type==="event")db.events.push({id,...f});
-  if(type==="card")db.cards.push({id,...f,limit:+f.limit,closing:+f.closing,due:+f.due});
-  if(type==="income")db.incomes.push({id,title:f.title,amount:Math.round(Number(f.amount)*100)/100,date:f.date});
-  if(type==="budget"){if(!db.budgets[f.month])db.budgets[f.month]={};db.budgets[f.month][f.category]=Math.round(Number(f.amount)*100)/100;}
+  if(type==="card")db.cards.push({id,...f,limit:parseMoney(f.limit),closing:+f.closing,due:+f.due});
+  if(type==="income")db.incomes.push({id,title:f.title,amount:parseMoney(f.amount),date:f.date});
+  if(type==="budget"){if(!db.budgets[f.month])db.budgets[f.month]={};db.budgets[f.month][f.category]=parseMoney(f.amount);}
   if(type==="bill"||type==="purchase"){
    const count=Math.max(1,Math.min(120,+f.installments||1));
    const unitValue=unit?cents(unit.value):0;
@@ -86,11 +92,12 @@ function editInstallment(id){
  const categories=["Alimentação","Transporte","Moradia","Saúde","Educação","Lazer e diversão","Compras","Contas e serviços","Outros"];
  const categoryOptions=categories.map(cat=>'<option value="'+cat+'" '+((current.category||"Outros")===cat?"selected":"")+'>'+cat+'</option>').join("");
  const root=$("#modalRoot");
- root.innerHTML='<div class="modal-backdrop"><div class="modal"><div class="modal-head"><h2>Editar parcela '+current.part+'/'+current.count+'</h2><button class="close" type="button">×</button></div><form id="editInstallmentForm"><div class="field"><label>Aplicar alteração</label><select name="scope"><option value="one">Somente esta parcela</option><option value="future">Esta e todas as próximas</option></select></div><div class="field"><label>Valor desta parcela (R$)</label><input name="amount" type="number" min="0" step="0.01" value="'+Number(current.amount).toFixed(2)+'" required></div><div class="field"><label>Vencimento</label><input name="date" type="date" value="'+esc(current.date)+'" required></div><div class="field"><label>Categoria</label><select name="category">'+categoryOptions+'</select></div><p class="muted">Ao escolher “esta e todas as próximas”, o valor será repetido nas parcelas seguintes e as datas serão ajustadas mantendo o intervalo mensal.</p><button class="primary" type="submit">Salvar alterações</button></form></div></div>';
+ root.innerHTML='<div class="modal-backdrop"><div class="modal"><div class="modal-head"><h2>Editar parcela '+current.part+'/'+current.count+'</h2><button class="close" type="button">×</button></div><form id="editInstallmentForm"><div class="field"><label>Aplicar alteração</label><select name="scope"><option value="one">Somente esta parcela</option><option value="future">Esta e todas as próximas</option></select></div><div class="field"><label>Valor desta parcela (R$)</label><input name="amount" type="text" inputmode="decimal" data-money value="'+Number(current.amount).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})+'" required></div><div class="field"><label>Vencimento</label><input name="date" type="date" value="'+esc(current.date)+'" required></div><div class="field"><label>Categoria</label><select name="category">'+categoryOptions+'</select></div><p class="muted">Ao escolher “esta e todas as próximas”, o valor será repetido nas parcelas seguintes e as datas serão ajustadas mantendo o intervalo mensal.</p><button class="primary" type="submit">Salvar alterações</button></form></div></div>';
+ bindMoneyInputs(root);
  root.querySelector(".close").onclick=()=>{root.innerHTML="";};
  root.querySelector(".modal-backdrop").onclick=e=>{if(e.target.classList.contains("modal-backdrop"))root.innerHTML="";};
  root.querySelector("#editInstallmentForm").onsubmit=e=>{
-  e.preventDefault();const f=Object.fromEntries(new FormData(e.target)),amount=Math.round(Number(f.amount)*100)/100;
+  e.preventDefault();const f=Object.fromEntries(new FormData(e.target)),amount=parseMoney(f.amount);
   const targets=f.scope==="future"?group.filter(x=>x.part>=current.part):[current];
   targets.forEach(item=>{item.amount=amount;item.category=f.category||"Outros";const offset=(Number(item.part)||1)-(Number(current.part)||1);item.date=f.scope==="future"?addMonths(f.date,offset):f.date;});
   root.innerHTML="";save();

@@ -436,3 +436,8 @@
 .family-form input{width:100%;padding:13px;border:1px solid var(--line);border-radius:10px;font:inherit;min-width:0}
 .family-form button{border:0;border-radius:10px;padding:12px 15px;font-weight:750;cursor:pointer}
 .family-safety-note{margin:18px 0 0;padding:12px;border-radius:12px;background:#f1f6fa;color:#617487;font-size:11px;line-height:1.55}
+
+/* Acesso direto à instalação PWA */
+.install-app-button{white-space:nowrap;border-color:rgba(255,255,255,.32);font-weight:700}
+.install-app-button[hidden]{display:none!important}
+@media(max-width:520px){.install-app-button{padding:10px 12px;font-size:13px}.topbar-actions{gap:8px}}

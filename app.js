@@ -157,7 +157,7 @@ function openDebtPayment(debtId){
 }
 
 function simulateDebtStrategy(items,monthlyBudget,method){
- const rows=items.map(x=>({id:x.id,title:x.title,balance:Math.round(Math.max(0,Number(x.balance)||0)*100),minimum:Math.round(Math.max(0,Number(x.minimum)||0)*100),rate:Math.max(0,Number(x.interest)||0)/100,payoffMonth:null}));
+ const rows=items.map(x=>({id:x.id,title:x.title,balance:Math.round(Math.max(0,Number(x.balance)||0)*100),minimum:Math.round(Math.max(0,Number(x.minimum)||0)*100),rate:Math.max(0,Number(x.interest)||0)/100,priority:(x.type==="mandatory"||x.type==="essential")?0:1,payoffMonth:null}));
  const original=rows.reduce((sum,x)=>sum+x.balance,0);
  if(!rows.length)return {months:0,interest:0,paid:0,success:true,schedule:[],payoffs:[]};
  const budget=Math.round(Math.max(0,monthlyBudget)*100);
@@ -174,7 +174,7 @@ function simulateDebtStrategy(items,monthlyBudget,method){
   const monthRows=active.map(x=>({id:x.id,title:x.title,opening:(x.balance-Math.round(x.balance-x.balance/(1+x.rate)))/100,interest:0,payment:0,closing:0}));
   const detailById=new Map(monthRows.map(x=>[x.id,x]));
   for(const x of active){const charge=Math.round(x.balance*x.rate);const d=detailById.get(x.id);d.interest=charge/100;const amount=Math.min(x.balance,x.minimum);x.balance-=amount;remaining-=amount;paid+=amount;d.payment+=amount/100;}
-  const sorted=rows.filter(x=>x.balance>0).sort((a,b)=>method==="avalanche"?(b.rate-a.rate||a.balance-b.balance):(a.balance-b.balance||b.rate-a.rate));
+  const sorted=rows.filter(x=>x.balance>0).sort((a,b)=>a.priority-b.priority||(method==="avalanche"?(b.rate-a.rate||a.balance-b.balance):(a.balance-b.balance||b.rate-a.rate)));
   for(const x of sorted){if(remaining<=0)break;const amount=Math.min(remaining,x.balance);x.balance-=amount;remaining-=amount;paid+=amount;detailById.get(x.id).payment+=amount/100;}
   for(const x of rows){const d=detailById.get(x.id);if(!d)continue;d.closing=x.balance/100;if(x.balance<=0&&!x.payoffMonth)x.payoffMonth=month;}
   const monthPaid=monthRows.reduce((sum,x)=>sum+Math.round(x.payment*100),0);
@@ -185,16 +185,13 @@ function simulateDebtStrategy(items,monthlyBudget,method){
  return {success:false,reason:"Não foi possível projetar a quitação em até 30 anos. Reveja juros e orçamento.",schedule};
 }
 function debtStrategyComparison(debts,budget){
- const fixed=debts.filter(x=>x.type==="mandatory"||x.type==="essential").reduce((sum,x)=>sum+Math.max(0,Number(x.minimum)||0),0);
- const negotiable=debts.filter(x=>x.type==="negotiable"&&Number(x.balance)>0);
- const available=Math.max(0,budget-fixed);
- const unknown=negotiable.some(x=>!Number(x.interest));
- const snow=simulateDebtStrategy(negotiable,available,"snowball"),ava=simulateDebtStrategy(negotiable,available,"avalanche");
- const base='<div class="strategy-heading"><h3>Compare dois caminhos</h3><p class="muted">Após reservar '+money(fixed)+' para obrigações essenciais e prioritárias, restam '+money(available)+' por mês para as dívidas negociáveis.</p></div>';
- if(!negotiable.length)return base+'<p class="muted">Cadastre pelo menos uma dívida negociável com saldo em aberto para comparar estratégias.</p>';
- if(budget<fixed)return base+'<p class="recovery-guidance">O valor reservado ainda não cobre os pagamentos prioritários. Negocie primeiro essas obrigações.</p>';
+ const modeled=debts.filter(x=>x.type!=="flexible"&&Number(x.balance)>0);
+ const unknown=modeled.some(x=>!Number(x.interest));
+ const snow=simulateDebtStrategy(modeled,budget,"snowball"),ava=simulateDebtStrategy(modeled,budget,"avalanche");
+ const base='<div class="strategy-heading"><h3>Compare dois caminhos</h3><p class="muted">A simulação considera o valor mensal informado para todas as obrigações com saldo. Primeiro respeita os pagamentos mínimos; depois direciona o valor restante às obrigações prioritárias e aplica a estratégia escolhida às demais dívidas.</p></div>';
+ if(!modeled.length)return base+'<p class="muted">Cadastre uma obrigação ou dívida com saldo em aberto para visualizar a previsão de quitação.</p>';
  const card=(name,subtitle,sim)=>'<article class="strategy-card"><strong>'+name+'</strong><small>'+subtitle+'</small>'+(sim.success?'<div class="strategy-numbers"><span><b>'+sim.months+'</b> meses</span><span><b>'+money(sim.interest)+'</b> juros estimados</span><span><b>'+money(sim.paid)+'</b> total estimado</span></div>':'<p class="strategy-warning">'+sim.reason+'</p>')+'</article>';
- let html=base+'<div class="strategy-cards">'+card("Bola de neve","Prioriza o menor saldo",snow)+card("Avalanche","Prioriza a maior taxa de juros",ava)+'</div>';
+ let html=base+'<div class="strategy-cards">'+card("Bola de neve","Prioriza o menor saldo após as obrigações prioritárias",snow)+card("Avalanche","Prioriza a maior taxa após as obrigações prioritárias",ava)+'</div>';
  if(snow.success&&ava.success){const saving=Math.max(0,snow.interest-ava.interest);html+='<p class="recovery-guidance">'+(saving>0?'Neste cenário, a avalanche economizaria aproximadamente '+money(saving)+' em juros.':'Neste cenário, as estratégias apresentam custos semelhantes.')+'</p>';}
  const schedule=snow.success?snow.schedule:ava.success?ava.schedule:null;
  if(schedule&&schedule.length){
@@ -205,7 +202,7 @@ function debtStrategyComparison(debts,budget){
   if(payoff&&payoff.length)html+='<div class="debt-payoff-list"><strong>Previsão de quitação por dívida</strong>'+payoff.map(x=>'<div><span>'+esc(x.title)+'</span><b>Mês '+x.month+'</b></div>').join("")+'</div>';
   html+='</div>';
  }
- html+='<p class="recovery-note">Simulação ilustrativa com juros mensais constantes, pagamentos mínimos informados e valor mensal fixo. Não inclui multas, tarifas, descontos, reajustes ou novas compras. '+(unknown?'Atenção: dívidas sem juros informados foram calculadas com taxa zero; o resultado pode subestimar o custo real. ':'')+'Contas essenciais e obrigações prioritárias são reservadas antes da simulação, mas seus saldos não são projetados aqui. Não é uma proposta de renegociação.</p>';
+ html+='<p class="recovery-note">Simulação ilustrativa com juros mensais constantes, pagamentos mínimos informados e valor mensal fixo. Não inclui multas, tarifas, descontos, reajustes ou novas compras. '+(unknown?'Atenção: dívidas sem juros informados foram calculadas com taxa zero; o resultado pode subestimar o custo real. ':'')+'Gastos flexíveis não entram na simulação; obrigações essenciais e prioritárias com saldo são incluídas. Confirme os valores e as condições diretamente com cada credor.</p>';
  return html;
 }
 function drawDebtRecovery(month,incomeTotal){

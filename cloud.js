@@ -22,10 +22,10 @@ function renderAuth(mode="login"){
  main.innerHTML='<div class="auth-wrap"><section class="auth-card"><p class="eyebrow">CONTA E SINCRONIZAÇÃO</p><h2>Agenda Inteligente na nuvem</h2><p class="muted">Entre com seu e-mail para proteger e sincronizar seus registros entre dispositivos.</p>'+
  (signed?'<div class="auth-message">Você está conectado como <strong>'+escapeHtml(session.user.email||"")+'</strong>.</div><div class="sync-status"><i class="sync-dot '+(lastMessage.includes("conclu")?"ok":"")+'"></i><span>'+escapeHtml(lastMessage||"Conta autenticada. Seus registros locais continuam preservados.")+'</span></div><div class="auth-actions"><button class="primary" id="cloudSyncNow">Sincronizar agora</button><button class="auth-secondary" id="cloudSignOut">Sair da conta</button></div>':
  '<div class="auth-actions"><button class="'+(mode==="login"?"primary":"auth-secondary")+'" data-auth-mode="login">Entrar</button><button class="'+(mode==="signup"?"primary":"auth-secondary")+'" data-auth-mode="signup">Criar conta</button><button class="auth-secondary" data-auth-mode="reset">Recuperar senha</button></div><form class="auth-form" id="cloudAuthForm">'+
- (mode==="reset"?'': '<label for="cloudEmail">E-mail</label><input id="cloudEmail" name="email" type="email" autocomplete="email" required placeholder="seuemail@exemplo.com">')+
+ (mode==="reset"||mode==="newpassword"?'': '<label for="cloudEmail">E-mail</label><input id="cloudEmail" name="email" type="email" autocomplete="email" required placeholder="seuemail@exemplo.com">')+
  (mode==="reset"?'<label for="cloudResetEmail">E-mail cadastrado</label><input id="cloudResetEmail" name="email" type="email" autocomplete="email" required placeholder="seuemail@exemplo.com">':'')+
- (mode==="reset"?'':'<label for="cloudPassword">Senha</label><input id="cloudPassword" name="password" type="password" minlength="8" autocomplete="'+(mode==="signup"?"new-password":"current-password")+'" required placeholder="Mínimo de 8 caracteres">')+
- '<button class="primary" type="submit">'+(mode==="signup"?"Criar minha conta":mode==="reset"?"Enviar link de recuperação":"Entrar")+'</button></form><div id="cloudMessage" class="auth-message" style="display:'+(lastMessage?"block":"none")+'">'+escapeHtml(lastMessage)+'</div>')+
+ (mode==="newpassword"?'<label for="cloudNewPassword">Nova senha</label><input id="cloudNewPassword" name="password" type="password" minlength="8" autocomplete="new-password" required placeholder="Mínimo de 8 caracteres">':(mode==="reset"?'':'<label for="cloudPassword">Senha</label><input id="cloudPassword" name="password" type="password" minlength="8" autocomplete="'+(mode==="signup"?"new-password":"current-password")+'" required placeholder="Mínimo de 8 caracteres">'))+
+ '<button class="primary" type="submit">'+(mode==="signup"?"Criar minha conta":mode==="reset"?"Enviar link de recuperação":mode==="newpassword"?"Salvar nova senha":"Entrar")+'</button></form><div id="cloudMessage" class="auth-message" style="display:'+(lastMessage?"block":"none")+'">'+escapeHtml(lastMessage)+'</div>')+
  '</section><section class="auth-card"><h3>Seus dados e segurança</h3><p class="muted">A sincronização usa o banco Supabase com políticas RLS por usuário. Seus registros locais não são apagados ao entrar. Na primeira sincronização, os dados locais são combinados com os dados da nuvem por identificador.</p><p class="muted">A sincronização atual envia alterações e combina registros; exclusões feitas offline ainda precisam ser tratadas em uma etapa própria. Continue mantendo seu backup JSON.</p></section></div>';
  const form=document.querySelector("#cloudAuthForm");
  if(form)form.onsubmit=async e=>{
@@ -33,17 +33,20 @@ function renderAuth(mode="login"){
   const submit=form.querySelector("button[type=submit]");submit.disabled=true;submit.textContent="Aguarde...";
   try{
    const c=clientReady();let result;
-   if(mode==="signup")result=await c.auth.signUp({email,password});
-   else if(mode==="reset")result=await c.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+   if(mode==="signup")result=await c.auth.signUp({email,password,options:{emailRedirectTo:"https://swagtop411-max.github.io/Agenda-inteligente/"}});
+   else if(mode==="reset")result=await c.auth.resetPasswordForEmail(email,{redirectTo:"https://swagtop411-max.github.io/Agenda-inteligente/"});
+   else if(mode==="newpassword")result=await c.auth.updateUser({password});
    else result=await c.auth.signInWithPassword({email,password});
    if(result.error)throw result.error;
    if(mode==="reset")message("Se o endereço estiver cadastrado, você receberá um link para redefinir a senha. Confira também o spam.");
+   else if(mode==="newpassword"){message("Senha atualizada. Entre novamente com a nova senha.");await c.auth.signOut();session=null;renderAuth("login");}
    else if(mode==="signup"&&!result.data.session)message("Conta criada. Confirme seu e-mail pelo link enviado para concluir o cadastro e depois entre aqui.");
    else {session=result.data.session;message("Autenticação concluída. Preparando a sincronização...");await afterLogin();}
   }catch(err){message(err.message||"Não foi possível concluir. Confira os dados e tente novamente.",true);}
-  finally{if(document.querySelector("#cloudAuthForm button[type=submit]")){const b=document.querySelector("#cloudAuthForm button[type=submit]");b.disabled=false;b.textContent=mode==="signup"?"Criar minha conta":mode==="reset"?"Enviar link de recuperação":"Entrar";}}
+  finally{if(document.querySelector("#cloudAuthForm button[type=submit]")){const b=document.querySelector("#cloudAuthForm button[type=submit]");b.disabled=false;b.textContent=mode==="signup"?"Criar minha conta":mode==="reset"?"Enviar link de recuperação":mode==="newpassword"?"Salvar nova senha":"Entrar";}}
  };
  main.querySelectorAll("[data-auth-mode]").forEach(b=>b.onclick=()=>{lastMessage="";renderAuth(b.dataset.authMode);});
+ const googleBtn=document.querySelector("#cloudGoogle");if(googleBtn)googleBtn.onclick=async()=>{try{const {error}=await clientReady().auth.signInWithOAuth({provider:"google",options:{redirectTo:"https://swagtop411-max.github.io/Agenda-inteligente/"}});if(error)throw error;}catch(err){message("Login Google ainda precisa ser habilitado e configurado no painel Supabase: "+(err.message||""),true);}};
  const syncBtn=document.querySelector("#cloudSyncNow");if(syncBtn)syncBtn.onclick=()=>syncNow(true);
  const out=document.querySelector("#cloudSignOut");if(out)out.onclick=async()=>{await clientReady().auth.signOut();session=null;lastMessage="Você saiu da conta. Os dados locais permanecem neste aparelho.";renderAuth();};
 }
@@ -110,7 +113,7 @@ setView=function(v){if(v==="auth"){activeView="auth";renderAuth();return;}origin
 document.querySelectorAll('[data-view="auth"]').forEach(b=>b.addEventListener("click",()=>{activeView="auth";renderAuth();}));
 (async function init(){
  try{client=clientReady();const {data,error}=await client.auth.getSession();if(error)throw error;session=data.session;
-  client.auth.onAuthStateChange((event,newSession)=>{session=newSession;if(event==="PASSWORD_RECOVERY"){lastMessage="Defina uma nova senha na tela de recuperação do Supabase.";activeView="auth";renderAuth("reset");}else if(newSession&&event==="SIGNED_IN"){afterLogin();}});
+  client.auth.onAuthStateChange((event,newSession)=>{session=newSession;if(event==="PASSWORD_RECOVERY"){lastMessage="Digite e salve sua nova senha abaixo.";activeView="auth";renderAuth("newpassword");}else if(newSession&&event==="SIGNED_IN"){afterLogin();}});
   if(session){lastMessage="Conta conectada. Verificando dados na nuvem...";await syncNow(false);}
  }catch(err){console.warn("Supabase não inicializado:",err);}
 })();

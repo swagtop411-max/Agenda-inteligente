@@ -55,3 +55,31 @@
 .finance-entry-actions .text-button{background:#edf5fb;color:#246d9f;border:0}
 .finance-entry-actions .danger-button{background:#fff1f0;color:#b42318;border:0;padding:7px 9px}
 .finance-entry-actions button:active{transform:scale(.98)}
+
+/* Elegant, interactive transaction cards */
+.finance-entry{display:block!important;background:linear-gradient(145deg,#fff 0%,#fbfdff 100%);border:1px solid #e3eaf1;border-radius:18px;padding:16px;margin:0 0 13px;box-shadow:0 5px 18px rgba(16,42,67,.055);transition:transform .18s ease,box-shadow .18s ease}
+.finance-entry:active{transform:scale(.99)}
+.finance-entry-top{display:flex!important;justify-content:space-between!important;align-items:center!important;gap:12px}
+.finance-entry-title{display:flex!important;flex-direction:row!important;align-items:center;gap:11px;min-width:0}
+.finance-entry-icon{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border-radius:14px;background:linear-gradient(145deg,#e7f2fc,#f1f7fd);color:#2878b8;font-size:22px;font-weight:700}
+.finance-entry-title>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.finance-entry-title>div>strong{font-size:16px;line-height:1.25;color:#172b3d;overflow-wrap:anywhere}
+.finance-entry-title small{display:block!important;color:#8291a0;font-size:12px}
+.finance-entry-amount{font-size:19px!important;font-weight:750;color:#18364f;white-space:nowrap;font-variant-numeric:tabular-nums}
+.finance-entry-meta{display:flex!important;align-items:center;flex-wrap:wrap;gap:8px;margin:14px 0 4px 53px}
+.finance-category{display:inline-flex!important;padding:5px 10px;border-radius:20px;background:#edf5fc;color:#276b9d;font-size:11px;font-weight:700}
+.finance-due{font-size:12px;color:#718096}
+.finance-status{font-size:11px;font-weight:750;padding:5px 10px;border-radius:20px}
+.finance-status.is-pending{background:#fff4d6;color:#916600}
+.finance-status.is-paid{background:#e5f6ed;color:#18794e}
+.finance-entry-details{margin-top:12px;border-top:1px solid #edf1f5;padding-top:10px}
+.finance-entry-details summary{list-style:none;display:flex;justify-content:space-between;align-items:center;color:#2878b8;font-size:12px;font-weight:750;cursor:pointer;padding:4px 1px}
+.finance-entry-details summary::-webkit-details-marker{display:none}
+.finance-entry-details summary span{font-size:17px;transition:transform .18s ease}
+.finance-entry-details[open] summary span{transform:rotate(180deg)}
+.finance-entry-actions{display:flex!important;align-items:stretch;flex-wrap:wrap;gap:8px;margin-top:11px;padding-top:10px;border-top:1px dashed #e5ebf1}
+.finance-entry-actions button{font-size:12px!important;font-weight:700;padding:9px 11px!important;border-radius:10px!important;cursor:pointer}
+.finance-entry-actions .text-button{background:#edf5fb!important;color:#246d9f!important;border:1px solid #e0edf7!important}
+.finance-entry-actions .danger-button{background:#fff1f0!important;color:#b42318!important;border:1px solid #fce1df!important}
+.finance-entry-actions button:active{transform:scale(.97)}
+@media(max-width:420px){.finance-entry{padding:13px;border-radius:16px}.finance-entry-icon{width:38px;height:38px;flex-basis:38px}.finance-entry-meta{margin-left:49px;gap:6px}.finance-entry-amount{font-size:17px!important}.finance-entry-actions button{flex:1 1 auto}}

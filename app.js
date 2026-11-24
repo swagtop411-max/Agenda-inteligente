@@ -14,7 +14,7 @@ const fmt=d=>new Date(d+"T12:00:00").toLocaleDateString("pt-BR");
 function esc(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function save(){localStorage.setItem(KEY,JSON.stringify(db));render();}
 function addMonths(s,n){let d=new Date(s+"T12:00:00"),day=d.getDate();d.setDate(1);d.setMonth(d.getMonth()+n);d.setDate(Math.min(day,new Date(d.getFullYear(),d.getMonth()+1,0).getDate()));return d.toISOString().slice(0,10);}
-function setView(v){activeView=v;render();}
+function setView(v){if(v==="family"&&window.AgendaInteligenteFamily){window.AgendaInteligenteFamily.open();return;}activeView=v;render();}
 document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>setView(b.dataset.view));
 const menuToggle=document.getElementById("menuToggle");
 const mainSidebar=document.querySelector(".sidebar");

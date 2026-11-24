@@ -441,3 +441,15 @@
 .install-app-button{white-space:nowrap;border-color:rgba(255,255,255,.32);font-weight:700}
 .install-app-button[hidden]{display:none!important}
 @media(max-width:520px){.install-app-button{padding:10px 12px;font-size:13px}.topbar-actions{gap:8px}}
+
+/* Formulário de convite familiar responsivo */
+.family-group{flex-wrap:wrap}
+.family-invite-form{flex:1 0 100%;width:100%;display:grid;gap:10px;margin-top:8px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#f8fbfe;box-sizing:border-box}
+.family-invite-form label{font-size:13px;font-weight:700;color:#34495e}
+.family-invite-form input{width:100%;min-width:0;padding:12px;border:1px solid var(--line);border-radius:9px;font:inherit;box-sizing:border-box}
+.family-invite-form-actions{display:flex;flex-wrap:wrap;gap:9px}
+.family-invite-form-actions button{flex:1 1 150px;min-height:44px;padding:11px 13px;border:0;border-radius:9px;font-weight:700;cursor:pointer}
+.family-invite-form-actions button:disabled{opacity:.6;cursor:wait}
+.family-invite-success{display:grid;gap:10px}
+.family-invite-success strong{color:#176b4b;font-size:15px}
+.family-invite-success p{margin:0;color:#526779;font-size:13px;line-height:1.5;overflow-wrap:anywhere}

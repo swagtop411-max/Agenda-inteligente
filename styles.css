@@ -243,3 +243,19 @@
 .plan-allocation>b{font-size:13px;white-space:nowrap;color:#16805f}
 .recovery-note{font-size:10px;line-height:1.5;color:#8793a0;margin-top:14px}
 @media(max-width:420px){.recovery-stats{gap:5px}.recovery-stats>div{padding:10px 7px}.recovery-stats small{font-size:9px}.recovery-panel .panel-heading{flex-wrap:wrap}.recovery-panel .panel-heading .primary{font-size:12px;padding:10px 12px}.calendar-grid{gap:4px}.calendar-day{min-height:43px;border-radius:9px}}
+
+/* Debt payoff comparison */
+.strategy-heading{margin:20px 0 12px}
+.strategy-heading h3{font-size:16px;color:#20384d;margin:0 0 7px}
+.strategy-heading p{font-size:12px;line-height:1.5;margin:0}
+.strategy-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+.strategy-card{display:flex;flex-direction:column;gap:8px;padding:14px 12px;border:1px solid #dfe8ef;border-radius:15px;background:#fff;min-width:0}
+.strategy-card:first-child{border-top:3px solid #2878b8}
+.strategy-card:last-child{border-top:3px solid #169b82}
+.strategy-card>strong{font-size:15px;color:#20384d}
+.strategy-card>small{font-size:11px;color:#7b8996}
+.strategy-numbers{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+.strategy-numbers span{display:flex;flex-direction:column;gap:2px;font-size:11px;color:#718096}
+.strategy-numbers b{font-size:17px;color:#20384d;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.strategy-warning{font-size:12px;line-height:1.5;color:#9a6a08;margin:0}
+@media(max-width:360px){.strategy-cards{grid-template-columns:1fr}}

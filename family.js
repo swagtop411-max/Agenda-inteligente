@@ -47,7 +47,7 @@ async function show(){
      const expiry=data[0].invitation_expires_at?new Date(data[0].invitation_expires_at):null;
      const expiryText=expiry&&!Number.isNaN(expiry.getTime())?expiry.toLocaleDateString("pt-BR"):"em 7 dias";
      const appUrl="https://swagtop411-max.github.io/Agenda-inteligente/";
-     const inviteText="Você foi convidado(a) para a família no Agenda Inteligente!\\n\\n1. Abra o aplicativo pelo navegador: "+appUrl+"\\n2. Entre ou crie sua conta usando este e-mail: "+email+"\\n3. Acesse Menu > Família e cole o código abaixo.\\n\\nCódigo do convite: "+token+"\\nValidade até: "+expiryText+"\\n\\nNão precisa baixar pela Play Store. Você pode adicionar o aplicativo à tela inicial do celular.";
+     const inviteText="Você foi convidado(a) para a família no Agenda Inteligente!\n\n1. Abra o aplicativo pelo navegador: "+appUrl+"\n2. Entre ou crie sua conta usando este e-mail: "+email+"\n3. Acesse Menu > Família e cole o código abaixo.\n\nCódigo do convite: "+token+"\nValidade até: "+expiryText+"\n\nNão precisa baixar pela Play Store. Você pode adicionar o aplicativo à tela inicial do celular.";
      form.innerHTML='<div class="family-invite-success"><strong>Convite gerado!</strong><p>Envie para '+esc(email)+'. Validade: '+esc(expiryText)+'.</p><div class="family-invite-form-actions"><button type="button" class="primary" data-share-invite>Compartilhar convite</button><button type="button" class="auth-secondary" data-copy-invite>Copiar mensagem e código</button></div></div>';
      form.querySelector("[data-share-invite]").onclick=async()=>{
       try{
@@ -65,7 +65,7 @@ async function show(){
     }catch(x){note(x.message||"Não foi possível gerar o convite.",true);submit.disabled=false;submit.textContent="Tentar novamente";}
    };
    form.querySelector("input").focus();
-  });;
+  });
  }catch(x){document.querySelector("#familyContent").innerHTML='<p class="muted">A base de Família ainda precisa ser preparada no Supabase. Execute o arquivo <strong>supabase/family.sql</strong> no SQL Editor do projeto e depois atualize o aplicativo.</p>';note(x.message||"Não foi possível carregar as famílias.",true);}
 }
 document.addEventListener("click",e=>{const b=e.target.closest('[data-view="family"]');if(!b)return;e.preventDefault();e.stopImmediatePropagation();show();const sidebar=document.querySelector(".sidebar");if(sidebar)sidebar.classList.remove("menu-open");const toggle=document.querySelector("#menuToggle");if(toggle){toggle.setAttribute("aria-expanded","false");toggle.querySelector(".menu-toggle-icon").textContent="☰";toggle.querySelector("span:last-child").textContent="Menu";}},true);

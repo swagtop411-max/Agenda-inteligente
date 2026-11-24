@@ -305,7 +305,9 @@ function exportBackup(){
  const payload={format:"agenda-inteligente-backup-v2",exportedAt:new Date().toISOString(),data:db};
  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
  const url=URL.createObjectURL(blob),a=document.createElement("a");
- a.href=url;a.download="agenda-inteligente-backup.json";a.click();URL.revokeObjectURL(url);
+ a.href=url;a.download="agenda-inteligente-backup-"+new Date().toISOString().slice(0,10)+".json";
+ document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),30000);
 }
 function render(){
  const main=$("#mainContent"),today=new Date().toISOString().slice(0,10),month=today.slice(0,7),pending=db.bills.filter(x=>!x.paid);
@@ -395,7 +397,10 @@ function render(){
    drawCards();
    $("#addCard").onclick=()=>openForm("card");$("#addPurchase").onclick=()=>openForm("purchase");const firstCard=$("#addFirstCard");if(firstCard)firstCard.onclick=()=>openForm("card");
  } else if(activeView==="backup"){
-  main.innerHTML='<div class="view-title"><h2>Backup e segurança</h2></div><section class="panel"><h3>Proteja seus registros</h3><p class="muted">Baixe uma cópia dos seus compromissos, contas e cartões. Guarde o arquivo em local seguro.</p><div class="quick-actions"><button class="primary" id="exportBackup">⇩ Baixar backup</button><label class="primary-button" for="importBackup" style="cursor:pointer">⇧ Restaurar backup</label><input id="importBackup" type="file" accept="application/json,.json" hidden></div></section><section class="panel"><h3>Onde seus dados ficam?</h3><p class="muted">Nesta versão, os registros ficam apenas no navegador deste aparelho. Limpar os dados do navegador ou trocar de aparelho pode apagá-los. O backup ajuda a preservar uma cópia, mas não substitui a sincronização em nuvem.</p></section><section class="panel"><h3>Privacidade</h3><p class="muted">Não cadastre senhas bancárias, números completos de cartão ou informações altamente confidenciais nesta versão de demonstração.</p></section>';
+  const cloudStatus=window.AgendaInteligenteCloud?window.AgendaInteligenteCloud.getStatus():"Sincronização em nuvem indisponível neste momento.";
+  const cloudConnected=cloudStatus.startsWith("Conectado como ");
+  const counts=[["Compromissos",db.events.length],["Contas e parcelas",db.bills.length],["Receitas",db.incomes.length],["Cartões",db.cards.length],["Dívidas",db.debts.length]];
+  main.innerHTML='<div class="view-title backup-view-title"><div><p class="eyebrow">PROTEÇÃO DOS SEUS DADOS</p><h2>Backup e segurança</h2><small class="muted">Tenha uma cópia dos seus registros e saiba onde estão protegidos.</small></div></div><section class="panel backup-cloud-panel"><div class="backup-section-heading"><div><p class="eyebrow">SINCRONIZAÇÃO</p><h3>Seus dados na nuvem</h3></div><span class="backup-status '+(cloudConnected?"connected":"local")+'">'+(cloudConnected?"Conta conectada":"Somente neste aparelho")+'</span></div><p class="muted">'+esc(cloudStatus)+'</p><button class="secondary-button" id="backupSyncNow" '+(window.AgendaInteligenteCloud?"":"disabled")+'>↻ Sincronizar agora</button><small class="backup-hint">A sincronização exige conexão com a internet e uma conta conectada. Continue mantendo uma cópia de segurança independente.</small></section><section class="panel backup-copy-panel"><div class="backup-section-heading"><div><p class="eyebrow">CÓPIA DE SEGURANÇA</p><h3>Seus registros neste aparelho</h3></div><span class="backup-count">'+counts.reduce((sum,item)=>sum+item[1],0)+' registros</span></div><div class="backup-count-grid">'+counts.map(([label,value])=>'<div><small>'+label+'</small><strong>'+value+'</strong></div>').join("")+'</div><div class="backup-actions"><button class="primary" id="exportBackup">↓ Baixar cópia de segurança</button><label class="secondary-button" for="importBackup">↑ Restaurar uma cópia</label><input id="importBackup" type="file" accept="application/json,.json" hidden></div><small class="backup-hint">O arquivo inclui compromissos, despesas e parcelas, receitas, cartões, orçamentos e dívidas.</small></section><section class="panel backup-safety-panel"><h3>Antes de restaurar</h3><p class="muted">A restauração substitui os registros atuais deste aparelho pelos dados do arquivo. Se possível, baixe uma cópia atual antes de continuar e não feche a página durante a restauração.</p><h3>Privacidade</h3><p class="muted">Não inclua senhas bancárias, códigos de segurança ou números completos de cartão nos registros. Guarde o arquivo de backup em local privado.</p></section>';
  }
 }
 document.addEventListener("click",e=>{
@@ -418,13 +423,26 @@ document.addEventListener("click",e=>{
  const bill=e.target.closest("[data-delete-bill]");if(bill&&confirm("Excluir todas as parcelas deste lançamento?")){db.bills=db.bills.filter(x=>(x.groupId||x.id)!==bill.dataset.deleteBill);save();return;}
  const card=e.target.closest("[data-delete-card]");if(card&&confirm("Excluir este cartão? Os lançamentos vinculados serão mantidos.")){db.cards=db.cards.filter(x=>x.id!==card.dataset.deleteCard);save();return;}
  if(e.target.closest("#exportBackup")){exportBackup();return;}
+ if(e.target.closest("#backupSyncNow")){if(window.AgendaInteligenteCloud)window.AgendaInteligenteCloud.sync();return;}
 });
 document.addEventListener("change",e=>{
  if(e.target.id==="importBackup"){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();reader.onload=()=>{
-   try{const parsed=JSON.parse(reader.result),data=parsed.data||parsed;if(!Array.isArray(data.events)||!Array.isArray(data.bills)||!Array.isArray(data.cards))throw new Error("Formato inválido");if(confirm("Restaurar este backup? Os dados atuais serão substituídos.")){db={events:data.events,bills:data.bills,cards:data.cards,incomes:Array.isArray(data.incomes)?data.incomes:[],budgets:data.budgets&&typeof data.budgets==="object"?data.budgets:{},debts:Array.isArray(data.debts)?data.debts:[]};db.bills.forEach(x=>{if(!x.category)x.category="Outros";});save();alert("Backup restaurado com sucesso.");}}
-   catch(err){alert("Não foi possível restaurar: arquivo inválido.");}
+   try{
+    if(file.size>10*1024*1024)throw new Error("O arquivo ultrapassa o limite de 10 MB.");
+    const parsed=JSON.parse(reader.result),data=parsed&&parsed.data?parsed.data:parsed;
+    if(!data||typeof data!=="object"||Array.isArray(data))throw new Error("O conteúdo do arquivo não é um backup válido.");
+    for(const key of ["events","bills","cards"]){if(!Array.isArray(data[key]))throw new Error("O backup está incompleto: seção "+key+" não encontrada.");if(data[key].some(item=>!item||typeof item!=="object"||Array.isArray(item)))throw new Error("Há registros inválidos na seção "+key+".");}
+    for(const key of ["incomes","debts"]){if(data[key]!==undefined&&(!Array.isArray(data[key])||data[key].some(item=>!item||typeof item!=="object"||Array.isArray(item))))throw new Error("A seção "+key+" contém dados inválidos.");}
+    if(data.budgets!==undefined&&(!data.budgets||typeof data.budgets!=="object"||Array.isArray(data.budgets)))throw new Error("A seção de orçamentos está inválida.");
+    const summary="Compromissos: "+data.events.length+"\nContas e parcelas: "+data.bills.length+"\nCartões: "+data.cards.length+"\nReceitas: "+(data.incomes||[]).length+"\nDívidas: "+(data.debts||[]).length;
+    if(confirm("Confira o conteúdo deste backup:\n\n"+summary+"\n\nA restauração substituirá os registros atuais deste aparelho. Deseja continuar?")){
+     db={events:data.events,bills:data.bills,cards:data.cards,incomes:Array.isArray(data.incomes)?data.incomes:[],budgets:data.budgets&&typeof data.budgets==="object"?data.budgets:{},debts:Array.isArray(data.debts)?data.debts:[]};
+     db.bills.forEach(x=>{if(!x.category)x.category="Outros";});
+     save();alert("Backup restaurado com sucesso. Se sua conta estiver conectada, a sincronização será iniciada automaticamente.");
+    }
+   }catch(err){alert("Não foi possível restaurar o backup: "+(err.message||"arquivo inválido."));}
   };reader.readAsText(file);e.target.value="";
  }
 });

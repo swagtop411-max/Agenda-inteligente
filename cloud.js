@@ -72,70 +72,155 @@ function renderAuth(mode="login"){
 }
 function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 async function getRows(table){const {data,error}=await client.from(table).select("*");if(error)throw error;return data||[];}
-function mergeById(local,remote){const map=new Map((remote||[]).map(x=>[String(x.id),x]));(local||[]).forEach(x=>map.set(String(x.id),{...(map.get(String(x.id))||{}),...x}));return [...map.values()];}
+const baselineKey=()=> "agendaInteligente_sync_baseline_"+session.user.id;
+const tombstoneKey=()=> "agendaInteligente_sync_tombstones_"+session.user.id;
+function readBaseline(){try{return JSON.parse(localStorage.getItem(baselineKey())||"null");}catch{return null;}}
+function readTombstones(){try{const x=JSON.parse(localStorage.getItem(tombstoneKey())||"[]");return Array.isArray(x)?x:[];}catch{return [];}}
+function writeTombstones(rows){localStorage.setItem(tombstoneKey(),JSON.stringify(rows));}
+function recordSignature(x){const copy={...(x||{})};delete copy.updatedAt;return JSON.stringify(copy);}
+function addTombstone(table,id,at){
+ if(!id)return;
+ const rows=readTombstones(),key=table+"|"+String(id),stamp=at||new Date().toISOString(),i=rows.findIndex(x=>x.table_name+"|"+x.record_id===key);
+ if(i>=0){if(String(rows[i].deleted_at)<stamp)rows[i].deleted_at=stamp;}
+ else rows.push({table_name:table,record_id:String(id),deleted_at:stamp});
+ writeTombstones(rows);
+}
+function trackArray(table,current,previous){
+ const before=new Map((previous||[]).map(x=>[String(x.id),x]));
+ const after=new Map((current||[]).map(x=>[String(x.id),x]));
+ const now=new Date().toISOString();
+ (current||[]).forEach(x=>{
+  const old=before.get(String(x.id));
+  if(!old||recordSignature(old)!==recordSignature(x))x.updatedAt=now;
+  else if(!x.updatedAt)x.updatedAt=old.updatedAt||now;
+ });
+ before.forEach((x,id)=>{if(!after.has(id))addTombstone(table,id,now);});
+}
+function trackLocalChanges(){
+ const before=readBaseline()||{events:[],cards:[],bills:[],incomes:[],debts:[],budgets:{}};
+ ["events","cards","bills","incomes"].forEach(t=>trackArray(t,db[t],before[t]||[]));
+ const oldDebts=before.debts||[];
+ const oldPayments=oldDebts.flatMap(d=>d.payments||[]);
+ const newPayments=db.debts.flatMap(d=>d.payments||[]);
+ trackArray("debt_payments",newPayments,oldPayments);
+ const oldDebtMap=new Map(oldDebts.map(x=>[String(x.id),x]));
+ const newDebtMap=new Map(db.debts.map(x=>[String(x.id),x]));
+ const now=new Date().toISOString();
+ db.debts.forEach(d=>{
+  const old=oldDebtMap.get(String(d.id));
+  const currentWithoutPayments={...d};delete currentWithoutPayments.payments;
+  const oldWithoutPayments=old?{...old}:null;if(oldWithoutPayments)delete oldWithoutPayments.payments;
+  if(!old||recordSignature(oldWithoutPayments)!==recordSignature(currentWithoutPayments))d.updatedAt=now;
+  else if(!d.updatedAt)d.updatedAt=old.updatedAt||now;
+ });
+ oldDebtMap.forEach((d,id)=>{if(!newDebtMap.has(id)){addTombstone("debts",id,now);(d.payments||[]).forEach(p=>addTombstone("debt_payments",p.id,now));}});
+}
+function stamp(x){return Date.parse(x?.updatedAt||"1970-01-01T00:00:00.000Z")||0;}
+function mergeVersioned(local,remote){
+ const map=new Map((remote||[]).map(x=>[String(x.id),x]));
+ (local||[]).forEach(x=>{const old=map.get(String(x.id));if(!old||stamp(x)>stamp(old))map.set(String(x.id),x);});
+ return [...map.values()];
+}
+function applyTombstones(rows){
+ const dead=new Map(rows.map(x=>[x.table_name+"|"+x.record_id,x.deleted_at]));
+ ["events","cards","bills","incomes"].forEach(t=>{db[t]=db[t].filter(x=>!dead.has(t+"|"+String(x.id)));});
+ db.debts=db.debts.filter(d=>!dead.has("debts|"+String(d.id))).map(d=>({...d,payments:(d.payments||[]).filter(p=>!dead.has("debt_payments|"+String(p.id)))}));
+}
 function remoteToLocal(rows){
  const by=Object.fromEntries(tables.map(t=>[t,rows[t]||[]]));
- const debts=by.debts.map(d=>({...d,type:d.type||"mandatory",balance:Number(d.balance)||0,initialBalance:Number(d.initial_balance)||Number(d.balance)||0,minimum:Number(d.minimum)||0,interest:Number(d.interest)||0,payments:by.debt_payments.filter(p=>p.debt_id===d.id).map(p=>({id:p.id,amount:Number(p.amount)||0,date:p.date,note:p.note||"",includeInFinance:p.include_in_finance!==false}))}));
+ const debts=by.debts.map(d=>({...d,type:d.type||"mandatory",balance:Number(d.balance)||0,initialBalance:Number(d.initial_balance)||Number(d.balance)||0,minimum:Number(d.minimum)||0,interest:Number(d.interest)||0,updatedAt:d.updated_at||null,payments:by.debt_payments.filter(p=>p.debt_id===d.id).map(p=>({id:p.id,amount:Number(p.amount)||0,date:p.date,note:p.note||"",includeInFinance:p.include_in_finance!==false,updatedAt:p.updated_at||null}))}));
  const budgets={};by.budgets.forEach(b=>{const month=String(b.month).slice(0,7);(budgets[month]||(budgets[month]={}))[b.category]=Number(b.amount)||0;});
- return {events:by.events.map(x=>({id:x.id,title:x.title,date:x.date,time:x.time||""})),cards:by.cards.map(x=>({id:x.id,title:x.title,limit:Number(x.limit)||0,closing:x.closing,due:x.due})),bills:by.bills.map(x=>({id:x.id,groupId:x.group_id||x.id,title:x.title,amount:Number(x.amount)||0,date:x.date,part:x.part,count:x.count,paid:!!x.paid,cardId:x.card_id||"",kind:x.kind||"bill",category:x.category||"Outros"})),incomes:by.incomes.map(x=>({id:x.id,title:x.title,amount:Number(x.amount)||0,date:x.date})),budgets,debts};
+ return {events:by.events.map(x=>({id:x.id,title:x.title,date:x.date,time:x.time||"",updatedAt:x.updated_at||null})),cards:by.cards.map(x=>({id:x.id,title:x.title,limit:Number(x.limit)||0,closing:x.closing,due:x.due,updatedAt:x.updated_at||null})),bills:by.bills.map(x=>({id:x.id,groupId:x.group_id||x.id,title:x.title,amount:Number(x.amount)||0,date:x.date,part:x.part,count:x.count,paid:!!x.paid,cardId:x.card_id||"",kind:x.kind||"bill",category:x.category||"Outros",updatedAt:x.updated_at||null})),incomes:by.incomes.map(x=>({id:x.id,title:x.title,amount:Number(x.amount)||0,date:x.date,updatedAt:x.updated_at||null})),budgets,debts};
 }
 function localToRemote(){
  const uid=session.user.id;
- const rows={
- events:db.events.map(x=>({id:x.id,user_id:uid,title:x.title,date:x.date,time:x.time||null})),
- cards:db.cards.map(x=>({id:x.id,user_id:uid,title:x.title,limit:Number(x.limit)||0,closing:Number(x.closing)||1,due:Number(x.due)||1})),
- bills:db.bills.map(x=>({id:x.id,user_id:uid,group_id:x.groupId||x.id,title:x.title,amount:Number(x.amount)||0,date:x.date,part:Number(x.part)||1,count:Number(x.count)||1,paid:!!x.paid,card_id:(db.cards.some(card=>card.id===x.cardId)?x.cardId:null),kind:x.kind||"bill",category:x.category||"Outros"})),
- incomes:db.incomes.map(x=>({id:x.id,user_id:uid,title:x.title,amount:Number(x.amount)||0,date:x.date})),
+ return {
+ events:db.events.map(x=>({id:x.id,user_id:uid,title:x.title,date:x.date,time:x.time||null,updated_at:x.updatedAt||new Date().toISOString()})),
+ cards:db.cards.map(x=>({id:x.id,user_id:uid,title:x.title,limit:Number(x.limit)||0,closing:Number(x.closing)||1,due:Number(x.due)||1,updated_at:x.updatedAt||new Date().toISOString()})),
+ bills:db.bills.map(x=>({id:x.id,user_id:uid,group_id:x.groupId||x.id,title:x.title,amount:Number(x.amount)||0,date:x.date,part:Number(x.part)||1,count:Number(x.count)||1,paid:!!x.paid,card_id:(db.cards.some(card=>card.id===x.cardId)?x.cardId:null),kind:x.kind||"bill",category:x.category||"Outros",updated_at:x.updatedAt||new Date().toISOString()})),
+ incomes:db.incomes.map(x=>({id:x.id,user_id:uid,title:x.title,amount:Number(x.amount)||0,date:x.date,updated_at:x.updatedAt||new Date().toISOString()})),
  budgets:Object.entries(db.budgets||{}).flatMap(([month,cats])=>Object.entries(cats||{}).map(([category,amount])=>({user_id:uid,month:month+"-01",category,amount:Number(amount)||0}))),
- debts:db.debts.map(x=>({id:x.id,user_id:uid,title:x.title,type:x.type||"mandatory",balance:Number(x.balance)||0,initial_balance:Number(x.initialBalance??x.balance)||0,minimum:Number(x.minimum)||0,interest:Number(x.interest)||0,date:x.date||null,risk:x.risk||"medium"})),
- debt_payments:db.debts.flatMap(d=>(d.payments||[]).map(p=>({id:p.id,user_id:uid,debt_id:d.id,amount:Number(p.amount)||0,date:p.date,note:p.note||"",include_in_finance:p.includeInFinance!==false})))
+ debts:db.debts.map(x=>({id:x.id,user_id:uid,title:x.title,type:x.type||"mandatory",balance:Number(x.balance)||0,initial_balance:Number(x.initialBalance??x.balance)||0,minimum:Number(x.minimum)||0,interest:Number(x.interest)||0,date:x.date||null,risk:x.risk||"medium",updated_at:x.updatedAt||new Date().toISOString()})),
+ debt_payments:db.debts.flatMap(d=>(d.payments||[]).map(p=>({id:p.id,user_id:uid,debt_id:d.id,amount:Number(p.amount)||0,date:p.date,note:p.note||"",include_in_finance:p.includeInFinance!==false,updated_at:p.updatedAt||new Date().toISOString()})))
  };
- return rows;
 }
-async function pushLocal(){
- const rows=localToRemote();
- for(const t of ["events","cards","incomes","budgets","debts","bills","debt_payments"]){
-  if(!rows[t].length)continue;
-  const {error}=await client.from(t).upsert(rows[t],{onConflict:t==="budgets"?"user_id,month,category":"id"});
+async function pushLocal(rows,remote,tombstones){
+ const dead=new Set(tombstones.map(x=>x.table_name+"|"+x.record_id));
+ for(const t of ["events","cards","incomes","debts","bills","debt_payments"]){
+  const remoteMap=new Map((remote[t]||[]).map(x=>[String(x.id),x]));
+  const pending=(rows[t]||[]).filter(x=>{
+   if(dead.has(t+"|"+String(x.id)))return false;
+   const old=remoteMap.get(String(x.id));
+   return !old||Date.parse(x.updated_at||0)>Date.parse(old.updated_at||0);
+  });
+  if(!pending.length)continue;
+  const {error}=await client.from(t).upsert(pending,{onConflict:"id"});
   if(error)throw error;
  }
+ const remoteBudgets=new Map((remote.budgets||[]).map(x=>[String(x.month).slice(0,7)+"|"+x.category,x]));
+ const pendingBudgets=(rows.budgets||[]).filter(x=>{
+  const old=remoteBudgets.get(String(x.month).slice(0,7)+"|"+x.category);
+  return !old||Number(old.amount)!==Number(x.amount);
+ });
+ if(pendingBudgets.length){const {error}=await client.from("budgets").upsert(pendingBudgets,{onConflict:"user_id,month,category"});if(error)throw error;}
+}
+async function syncTombstones(localRows){
+ if(localRows.length){const payload=localRows.map(x=>({user_id:session.user.id,table_name:x.table_name,record_id:x.record_id,deleted_at:x.deleted_at}));const {error}=await client.from("sync_deletions").upsert(payload,{onConflict:"user_id,table_name,record_id"});if(error)throw error;}
+ const {data,error}=await client.from("sync_deletions").select("table_name,record_id,deleted_at");
+ if(error)throw error;
+ const merged=new Map();
+ [...localRows,...(data||[])].forEach(x=>{const k=x.table_name+"|"+x.record_id,old=merged.get(k);if(!old||String(x.deleted_at)>String(old.deleted_at))merged.set(k,x);});
+ const all=[...merged.values()];
+ writeTombstones(all);
+ for(const t of ["events","cards","bills","incomes","debts","debt_payments"]){
+  const ids=all.filter(x=>x.table_name===t).map(x=>x.record_id);
+  for(const id of ids){const {error:delError}=await client.from(t).delete().eq("id",id);if(delError)throw delError;}
+ }
+ return all;
 }
 async function syncNow(showUI){
  if(!session||syncBusy)return false;
- if(!navigator.onLine){
-  syncState="offline";lastMessage="Sem internet. Seus registros continuam salvos neste aparelho e serão sincronizados quando a conexão voltar.";
-  if(showUI)refreshVisibleStatus();
-  return false;
- }
- syncBusy=true;syncState="syncing";
- if(showUI)refreshVisibleStatus();
+ if(!navigator.onLine){syncState="offline";lastMessage="Sem internet. Seus registros continuam salvos neste aparelho e serão sincronizados quando a conexão voltar.";if(showUI)refreshVisibleStatus();return false;}
+ syncBusy=true;syncState="syncing";if(showUI)refreshVisibleStatus();
  try{
   client=clientReady();
-  const remote={};for(const t of tables)remote[t]=await getRows(t);
+  trackLocalChanges();
+  let tombstones=await syncTombstones(readTombstones());
+  applyTombstones(tombstones);
+  let remote={};for(const t of tables)remote[t]=await getRows(t);
   const cloudDb=remoteToLocal(remote);
-  const cloudHas=Object.values(remote).some(a=>a.length>0);
-  if(cloudHas){
-   db.events=mergeById(db.events,cloudDb.events);
-   db.cards=mergeById(db.cards,cloudDb.cards);
-   db.bills=mergeById(db.bills,cloudDb.bills);
-   db.incomes=mergeById(db.incomes,cloudDb.incomes);
-   db.debts=mergeById(db.debts,cloudDb.debts).map(d=>({...d,payments:mergeById(d.payments||[],(cloudDb.debts.find(x=>x.id===d.id)||{}).payments||[])}));
-   Object.entries(cloudDb.budgets).forEach(([m,c])=>{db.budgets[m]||(db.budgets[m]={});Object.entries(c).forEach(([k,v])=>{if(db.budgets[m][k]===undefined)db.budgets[m][k]=v;});});
-  }
+  ["events","cards","bills","incomes"].forEach(t=>{db[t]=mergeVersioned(db[t],cloudDb[t]);});
+  const cloudDebtMap=new Map(cloudDb.debts.map(x=>[String(x.id),x]));
+  db.debts=mergeVersioned(db.debts,cloudDb.debts).map(d=>{
+   const remoteDebt=cloudDebtMap.get(String(d.id));
+   if(!remoteDebt)return d;
+   return {...d,payments:mergeVersioned(d.payments||[],remoteDebt.payments||[])};
+  });
+  Object.entries(cloudDb.budgets).forEach(([m,c])=>{db.budgets[m]||(db.budgets[m]={});Object.entries(c).forEach(([k,v])=>{if(db.budgets[m][k]===undefined)db.budgets[m][k]=v;});});
+  applyTombstones(tombstones);
   localStorage.setItem(KEY,JSON.stringify(db));
-  await pushLocal();
+  const rows=localToRemote();
+  await pushLocal(rows,remote,tombstones);
+  remote={};for(const t of tables)remote[t]=await getRows(t);
+  const confirmed=remoteToLocal(remote);
+  ["events","cards","bills","incomes"].forEach(t=>{db[t]=mergeVersioned(db[t],confirmed[t]);});
+  const confirmedDebtMap=new Map(confirmed.debts.map(x=>[String(x.id),x]));
+  db.debts=mergeVersioned(db.debts,confirmed.debts).map(d=>{
+   const remoteDebt=confirmedDebtMap.get(String(d.id));
+   return remoteDebt?{...d,payments:mergeVersioned(d.payments||[],remoteDebt.payments||[])}:d;
+  });
+  applyTombstones(tombstones);
   localStorage.setItem(KEY,JSON.stringify(db));
-  lastSyncAt=new Date().toISOString();
-  localStorage.setItem("agendaInteligente_lastCloudSync",lastSyncAt);
+  localStorage.setItem(baselineKey(),JSON.stringify(db));
+  lastSyncAt=new Date().toISOString();localStorage.setItem("agendaInteligente_lastCloudSync",lastSyncAt);
   retryCount=0;clearTimeout(retryTimer);syncState="synced";
-  lastMessage="Sincronização concluída. "+db.events.length+" compromisso(s), "+db.bills.length+" parcela(s), "+db.cards.length+" cartão(ões), "+db.incomes.length+" receita(s) e "+db.debts.length+" dívida(s) disponíveis.";
+  lastMessage="Sincronização segura concluída. "+db.events.length+" compromisso(s), "+db.bills.length+" parcela(s), "+db.cards.length+" cartão(ões), "+db.incomes.length+" receita(s) e "+db.debts.length+" dívida(s) disponíveis.";
   return true;
  }catch(err){
   syncState=navigator.onLine?"error":"offline";
-  lastMessage=(syncState==="offline"?"Sem internet. Seus dados continuam salvos neste aparelho. ":"Falha na sincronização: ")+(err.message||"verifique conexão, login e permissões.");
-  console.error("Agenda Inteligente sync:",err);
-  scheduleRetry();
-  return false;
+  const msg=String(err.message||"");
+  lastMessage=(/sync_deletions|updated_at|column .* does not exist|relation .* does not exist/i.test(msg)?"Proteção de sincronização pendente. Execute supabase/sync_safety.sql no Supabase SQL Editor. Seus dados locais foram preservados. ":"Falha na sincronização: ")+(msg||"verifique conexão, login e permissões.");
+  console.error("Agenda Inteligente sync:",err);scheduleRetry();return false;
  }finally{syncBusy=false;if(activeView==="backup"||(showUI&&activeView==="auth"))refreshVisibleStatus();}
 }
 async function afterLogin(){if(activeView==="auth")renderAuth();await syncNow(true);}
@@ -147,7 +232,7 @@ function queueSync(){
  syncTimer=setTimeout(()=>syncNow(false),1800);
 }
 const originalSave=save;
-save=function(){originalSave();queueSync();};
+save=function(){trackLocalChanges();originalSave();queueSync();};
 const originalSetView=setView;
 setView=function(v){if(v==="auth"){activeView="auth";renderAuth();return;}originalSetView(v);};
 document.querySelectorAll('[data-view="auth"]').forEach(b=>b.addEventListener("click",()=>{activeView="auth";renderAuth();}));

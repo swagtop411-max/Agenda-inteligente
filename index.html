@@ -47,7 +47,7 @@
   <script src="app.js?v=20261124-38"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="cloud.js?v=20261124-4"></script>
-<script src="family.js?v=20261124-7"></script>
+<script src="family.js?v=20261124-8"></script>
 <script>
 (function(){
   "use strict";
@@ -74,7 +74,7 @@
   window.addEventListener("appinstalled",function(){installButton.hidden=true;});
   if("serviceWorker" in navigator){
     window.addEventListener("load",function(){
-      navigator.serviceWorker.register("./sw.js").catch(function(error){console.warn("Não foi possível ativar o modo instalável/offline:",error);});
+      navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).then(function(registration){return registration.update();}).catch(function(error){console.warn("Não foi possível atualizar o modo instalável/offline:",error);});
     });
   }
 })();

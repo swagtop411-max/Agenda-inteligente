@@ -52,7 +52,7 @@ No Android, abra o endereço no Chrome e use o menu do navegador para **Instalar
 ## Próximas etapas de desenvolvimento
 
 1. Criar backend e banco de dados com regras de acesso por usuário.
-2. Implementar login, recuperação de senha e sincronização.
+2. Validar autenticação, URLs de redirecionamento, sincronização e migração no dispositivo real.
 3. Implementar família compartilhada com privacidade por registro e permissões.
 4. Desenvolver cálculo de faturas por data de fechamento e vencimento.
 5. Implementar notificações e lembretes confiáveis.
@@ -72,4 +72,4 @@ O esquema inicial do banco está em `supabase/schema.sql`. Ele cria tabelas para
 - As políticas permitem operações somente para o usuário autenticado dono dos registros.
 - Nenhuma chave secreta ou dado pessoal de backup é armazenado neste repositório.
 
-**Estado:** esquema preparado, mas ainda não executado no projeto Supabase. O app ainda usa armazenamento local; login, sincronização e importação não estão ativos. Antes de ativá-los, será necessário executar o SQL no Supabase SQL Editor, configurar autenticação e testar a migração com segurança.
+**Estado:** esquema executado e verificado no projeto Supabase: as sete tabelas existem e RLS está ativado em todas. O front-end agora inclui tela de conta, cadastro/login por e-mail, recuperação de senha, opção de OAuth Google (depende da configuração do provedor no Supabase) e sincronização inicial/por alterações com o banco. A primeira sincronização combina registros locais e remotos por ID e mantém o backup local. Exclusões offline ainda não são propagadas automaticamente; mantenha backups e use a sincronização manual para buscar registros de outros dispositivos.

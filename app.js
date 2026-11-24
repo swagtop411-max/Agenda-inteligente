@@ -46,16 +46,16 @@ function openForm(type){
  const categories=["Alimentação","Transporte","Moradia","Saúde","Educação","Lazer e diversão","Compras","Contas e serviços","Outros"];
  const root=$("#modalRoot");
  const fields=cfg.fields.map(([name,label,inputType])=>{
-  if(inputType==="select"){const options=db.cards.map(card=>'<option value="'+esc(card.id)+'">'+esc(card.title)+'</option>').join("");return '<div class="field"><label>'+label+'</label><select name="cardId"><option value="">Sem cartão</option>'+options+'</select></div>';}
+  if(inputType==="select"){const options=db.cards.map(card=>'<option value="'+esc(card.id)+'">'+esc(card.title)+'</option>').join("");return '<div class="field"><label>'+label+'</label><select name="cardId"><option value="">Sem cartão · não vincular</option>'+options+'</select>'+(db.cards.length?'':'<small class="muted">Você ainda não cadastrou cartões. É possível salvar a compra sem vínculo e cadastrar um cartão depois.</small>')+'</div>';}
   if(inputType==="category"){const options=categories.map(cat=>'<option value="'+cat+'">'+cat+'</option>').join("");return '<div class="field"><label>'+label+'</label><select name="category">'+options+'</select></div>';}
   const isMoney=name==="amount"||name==="limit";
-  const attrs=name==="installments"?'min="1" max="120" value="1"':(isMoney?'inputmode="decimal" data-money placeholder="0,00"':(inputType==="number"?'min="0" step="0.01"':""));
+  const attrs=name==="installments"?'min="1" max="120" step="1" value="1"':((name==="closing"||name==="due")?'min="1" max="31" step="1" placeholder="1 a 31"':(isMoney?'inputmode="decimal" data-money placeholder="0,00"':(inputType==="number"?'min="0" step="0.01"':"")));
   const fieldType=isMoney?"text":inputType;
   const defaultValue=name==="month"?'value="'+new Date().toISOString().slice(0,7)+'"':"";
   return '<div class="field"><label>'+label+'</label><input name="'+name+'" type="'+fieldType+'" required '+attrs+' '+defaultValue+'></div>';
  }).join("");
  const editor=(type==="purchase"||type==="bill")?'<section class="installment-editor"><p class="muted">Digite o valor normalmente. Os pontos de milhar e a vírgula dos centavos serão inseridos automaticamente.</p><div class="field"><label>Valor de cada parcela (R$)</label><input id="installmentUnit" type="text" inputmode="decimal" data-money placeholder="0,00"></div><strong id="installmentSum"></strong></section>':"";
- root.innerHTML='<div class="modal-backdrop"><div class="modal"><div class="modal-head"><h2>'+cfg.title+'</h2><button class="close" type="button">×</button></div><form id="recordForm">'+fields+editor+'<button class="primary" type="submit">Salvar registro</button></form></div></div>';
+ root.innerHTML='<div class="modal-backdrop"><section class="modal" role="dialog" aria-modal="true" aria-label="'+esc(cfg.title)+'"><header class="modal-head"><div><p class="modal-kicker">AGENDA INTELIGENTE</p><h2>'+cfg.title+'</h2></div><button class="close" type="button" aria-label="Fechar formulário">×</button></header><form id="recordForm" class="modal-form"><div class="modal-body">'+fields+editor+'</div><footer class="modal-footer"><button class="primary" type="submit">Salvar registro</button></footer></form></section></div></div>';
  root.querySelector(".close").onclick=()=>{root.innerHTML="";};
  root.querySelector(".modal-backdrop").onclick=e=>{if(e.target.classList.contains("modal-backdrop"))root.innerHTML="";};
  const form=root.querySelector("#recordForm");

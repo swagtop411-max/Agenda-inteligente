@@ -72,6 +72,20 @@ function openForm(type){
   root.innerHTML="";save();
  };
 }
+function editInstallment(id){
+ const current=db.bills.find(x=>x.id===id);if(!current)return;
+ const group=db.bills.filter(x=>(x.groupId||x.id)===(current.groupId||current.id)).sort((a,b)=>a.part-b.part);
+ const root=$("#modalRoot");
+ root.innerHTML='<div class="modal-backdrop"><div class="modal"><div class="modal-head"><h2>Editar parcela '+current.part+'/'+current.count+'</h2><button class="close" type="button">×</button></div><form id="editInstallmentForm"><div class="field"><label>Aplicar alteração</label><select name="scope"><option value="one">Somente esta parcela</option><option value="future">Esta e todas as próximas</option></select></div><div class="field"><label>Valor desta parcela (R$)</label><input name="amount" type="number" min="0" step="0.01" value="'+Number(current.amount).toFixed(2)+'" required></div><div class="field"><label>Vencimento</label><input name="date" type="date" value="'+esc(current.date)+'" required></div><p class="muted">Ao escolher “esta e todas as próximas”, o valor será repetido nas parcelas seguintes e as datas serão ajustadas mantendo o intervalo mensal.</p><button class="primary" type="submit">Salvar alterações</button></form></div></div>';
+ root.querySelector(".close").onclick=()=>{root.innerHTML="";};
+ root.querySelector(".modal-backdrop").onclick=e=>{if(e.target.classList.contains("modal-backdrop"))root.innerHTML="";};
+ root.querySelector("#editInstallmentForm").onsubmit=e=>{
+  e.preventDefault();const f=Object.fromEntries(new FormData(e.target)),amount=Math.round(Number(f.amount)*100)/100;
+  const targets=f.scope==="future"?group.filter(x=>x.part>=current.part):[current];
+  targets.forEach(item=>{item.amount=amount;const offset=(Number(item.part)||1)-(Number(current.part)||1);item.date=f.scope==="future"?addMonths(f.date,offset):f.date;});
+  root.innerHTML="";save();
+ };
+}
 function exportBackup(){
  const payload={format:"agenda-inteligente-backup-v1",exportedAt:new Date().toISOString(),data:db};
  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
@@ -95,7 +109,7 @@ function render(){
   $("#monthFilter").onchange=draw;draw();$("#addEvent").onclick=()=>openForm("event");
  } else if(activeView==="finance"){
   main.innerHTML='<div class="view-title"><h2>Financeiro</h2><button class="primary" id="addBill">＋ Conta</button></div><div class="stat-card"><small>Total pendente</small><strong>'+money(pending.reduce((s,x)=>s+x.amount,0))+'</strong></div><div id="financeItems" class="list-area"></div>';
-  $("#financeItems").innerHTML=db.bills.length?db.bills.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(x=>'<div class="list-item"><div><strong>'+esc(x.title)+' • '+x.part+'/'+x.count+'</strong><small>Vencimento '+fmt(x.date)+'</small></div><div><strong>'+money(x.amount)+'</strong><br><button class="text-button" data-pay="'+x.id+'">'+(x.paid?"Desfazer pagamento":"Marcar como pago")+'</button><br><button class="danger-button" data-delete-bill="'+(x.groupId||x.id)+'">Excluir parcelas</button></div></div>').join(""):'<div class="empty">Nenhuma conta cadastrada.</div>';
+  $("#financeItems").innerHTML=db.bills.length?db.bills.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(x=>'<div class="list-item"><div><strong>'+esc(x.title)+' • '+x.part+'/'+x.count+'</strong><small>Vencimento '+fmt(x.date)+'</small></div><div><strong>'+money(x.amount)+'</strong><br><button class="text-button" data-pay="'+x.id+'">'+(x.paid?"Desfazer pagamento":"Marcar como pago")+'</button><br><button class="text-button" data-edit-installment="'+x.id+'">Editar parcela</button><br><button class="danger-button" data-delete-bill="'+(x.groupId||x.id)+'">Excluir parcelas</button></div></div>').join(""):'<div class="empty">Nenhuma conta cadastrada.</div>';
   $("#addBill").onclick=()=>openForm("bill");
  } else if(activeView==="cards"){
   main.innerHTML='<div class="view-title"><h2>Meus cartões</h2><button class="primary" id="addCard">＋ Cartão</button></div><div id="cardsItems" class="list-area"></div>';
@@ -109,6 +123,7 @@ document.addEventListener("click",e=>{
  const quick=e.target.closest("#quickAdd");if(quick){openForm("event");return;}
  const action=e.target.closest("[data-action]");if(action){openForm(action.dataset.action);return;}
  const go=e.target.closest("[data-go]");if(go){setView(go.dataset.go);return;}
+ const edit=e.target.closest("[data-edit-installment]");if(edit){editInstallment(edit.dataset.editInstallment);return;}
  const pay=e.target.closest("[data-pay]");if(pay){let item=db.bills.find(x=>x.id===pay.dataset.pay);if(item){item.paid=!item.paid;save();}return;}
  const event=e.target.closest("[data-delete-event]");if(event&&confirm("Excluir este compromisso?")){db.events=db.events.filter(x=>x.id!==event.dataset.deleteEvent);save();return;}
  const bill=e.target.closest("[data-delete-bill]");if(bill&&confirm("Excluir todas as parcelas deste lançamento?")){db.bills=db.bills.filter(x=>(x.groupId||x.id)!==bill.dataset.deleteBill);save();return;}

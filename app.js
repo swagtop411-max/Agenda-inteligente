@@ -16,6 +16,22 @@ function save(){localStorage.setItem(KEY,JSON.stringify(db));render();}
 function addMonths(s,n){let d=new Date(s+"T12:00:00"),day=d.getDate();d.setDate(1);d.setMonth(d.getMonth()+n);d.setDate(Math.min(day,new Date(d.getFullYear(),d.getMonth()+1,0).getDate()));return d.toISOString().slice(0,10);}
 function setView(v){activeView=v;render();}
 document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>setView(b.dataset.view));
+const menuToggle=document.getElementById("menuToggle");
+const mainSidebar=document.querySelector(".sidebar");
+if(menuToggle&&mainSidebar){
+ menuToggle.addEventListener("click",()=>{
+  const open=mainSidebar.classList.toggle("menu-open");
+  menuToggle.setAttribute("aria-expanded",String(open));
+  menuToggle.querySelector(".menu-toggle-icon").textContent=open?"✕":"☰";
+  menuToggle.querySelector("span:last-child").textContent=open?"Fechar":"Menu";
+ });
+ document.querySelectorAll(".sidebar [data-view]").forEach(b=>b.addEventListener("click",()=>{
+  mainSidebar.classList.remove("menu-open");
+  menuToggle.setAttribute("aria-expanded","false");
+  menuToggle.querySelector(".menu-toggle-icon").textContent="☰";
+  menuToggle.querySelector("span:last-child").textContent="Menu";
+ }));
+}
 function row(title,sub,amount="",paid=null,action=""){return '<div class="list-item"><div><strong>'+esc(title)+'</strong><small>'+esc(sub)+'</small></div><div style="text-align:right">'+(amount?'<strong>'+money(amount)+'</strong> ':"")+(paid===null?"":'<span class="pill '+(paid?"paid":"")+'">'+(paid?"Pago":"Pendente")+'</span>')+action+'</div></div>';}
 function openForm(type){
  const configs={

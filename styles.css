@@ -767,3 +767,16 @@
 #mainContent .notice-empty{display:grid;gap:4px;padding:16px 12px;border-radius:12px;background:#f4f8fb;text-align:center}
 #mainContent .notice-empty strong{color:#315e80;font-size:12px}
 #mainContent .notice-empty span{color:#7c8996;font-size:10px;line-height:1.45}
+
+
+/* Configuração de notificações push */
+#mainContent .push-settings{padding:17px;border-radius:18px;margin:0 0 14px}
+#mainContent .push-settings .panel-heading{align-items:center;margin-bottom:8px}
+#mainContent .push-settings .panel-heading h2{margin:0;color:#20394f;font-size:17px}
+#mainContent .push-settings .panel-heading small{display:block;margin-top:4px;color:#81909e;font-size:11px}
+#mainContent .push-state{flex-shrink:0;padding:6px 10px;border-radius:30px;background:#edf4f9;color:#315e80;font-size:10px;font-weight:800}
+#mainContent .push-description{font-size:12px;line-height:1.55}
+#mainContent .push-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px}
+#mainContent .push-actions button{min-height:43px;padding:10px 14px;border-radius:11px;font-size:12px;font-weight:750}
+#mainContent .push-footnote{display:block;margin-top:10px;color:#7b8997;font-size:10px;line-height:1.5}
+#mainContent .push-footnote.error{color:#a43c32}

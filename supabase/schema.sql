@@ -104,10 +104,10 @@ declare
 begin
   foreach tbl in array array['events','cards','bills','incomes','budgets','debts','debt_payments']
   loop
-    execute format('drop policy if exists "Users manage own %I" on public.%I', tbl, tbl);
+    execute format('drop policy if exists %I on public.%I', 'Users manage own ' || tbl, tbl);
     execute format(
-      'create policy "Users manage own %I" on public.%I for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()))',
-      tbl, tbl
+      'create policy %I on public.%I for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()))',
+      'Users manage own ' || tbl, tbl
     );
   end loop;
 end $$;

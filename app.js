@@ -186,7 +186,7 @@ function simulateDebtStrategy(items,monthlyBudget,method){
 function debtStrategyComparison(debts,budget){
  const modeled=debts.filter(x=>x.type!=="flexible"&&Number(x.balance)>0);
  const unknown=modeled.some(x=>!Number(x.interest));
- const priorityMinimum=modeled.filter(x=>x.type==="mandatory"||x.type==="essential").reduce((sum,x)=>sum+Math.max(0,Number(x.minimum)||0),0);
+ const priorityMinimum=modeled.filter(x=>x.type==="mandatory"||x.type==="essential").reduce((sum,x)=>sum+Math.min(Math.max(0,Number(x.balance)||0),Math.max(0,Number(x.minimum)||0)),0);
  const base='<div class="strategy-heading"><h3>Compare dois caminhos</h3><p class="muted">A simulação considera o valor mensal informado para todas as obrigações com saldo. Primeiro respeita os pagamentos mínimos; depois direciona o valor restante às obrigações prioritárias e aplica a estratégia escolhida às demais dívidas.</p></div>';
  if(!modeled.length)return base+'<p class="muted">Cadastre uma obrigação ou dívida com saldo em aberto para visualizar a previsão de quitação.</p>';
  if(priorityMinimum>budget)return base+'<article class="strategy-card"><strong>Primeiro passo: renegociar a obrigação prioritária</strong><p class="strategy-warning">O valor reservado é '+money(budget)+' por mês, mas as parcelas mínimas prioritárias somam '+money(priorityMinimum)+'. Faltam '+money(priorityMinimum-budget)+' para cobrir esses mínimos.</p><p>Por enquanto, não seria responsável estimar uma data de quitação. O valor reservado deve ser tratado como capacidade de pagamento para apresentar uma proposta ao credor, não como garantia de que o pagamento parcial evitará juros, multa ou atraso.</p><p><b>Próximos passos:</b> contate o credor antes do vencimento, peça uma parcela que caiba no orçamento, solicite o custo total do acordo e confirme por escrito juros, multas e consequências. Depois, atualize o pagamento mínimo e os juros cadastrados para comparar Bola de neve e Avalanche.</p></article><p class="recovery-note">A simulação de quitação ficará disponível quando o orçamento informado cobrir os mínimos prioritários ou após você atualizar os valores com base em um acordo confirmado. Não deixe de pagar nem atrase uma obrigação com base apenas nesta estimativa.</p>';
@@ -222,11 +222,11 @@ function drawDebtRecovery(month,incomeTotal){
  const saved=localStorage.getItem("agendaDebtBudget")||"",budget=parseMoney(saved);
  const budgetInput=$("#debtBudget");if(budgetInput&&budgetInput.value!==saved&&saved)budgetInput.value=Number(budget).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
  const mandatory=debts.filter(x=>x.type==="mandatory"||x.type==="essential"),negotiable=debts.filter(x=>x.type==="negotiable");
- const required=mandatory.reduce((n,x)=>n+(Number(x.minimum)||0),0);
+ const required=mandatory.reduce((n,x)=>n+Math.min(Math.max(0,Number(x.balance)||0),Math.max(0,Number(x.minimum)||0)),0);
  let remaining=budget,allocations=[];
- mandatory.forEach(x=>{const pay=Math.min(remaining,Number(x.minimum)||0);remaining-=pay;allocations.push({x,pay,short:Math.max(0,(Number(x.minimum)||0)-pay)});});
+ mandatory.forEach(x=>{const due=Math.min(Math.max(0,Number(x.balance)||0),Math.max(0,Number(x.minimum)||0));const pay=Math.min(remaining,due);remaining-=pay;allocations.push({x,pay,short:Math.max(0,due-pay)});});
  const strategy=negotiable.slice().sort((a,b)=>(Number(b.interest)||0)-(Number(a.interest)||0));
- strategy.forEach(x=>{const pay=Math.min(remaining,Number(x.minimum)||Number(x.balance)||0);remaining-=pay;allocations.push({x,pay,short:Math.max(0,(Number(x.minimum)||Number(x.balance)||0)-pay)});});
+ strategy.forEach(x=>{const due=Math.min(Math.max(0,Number(x.balance)||0),Math.max(0,Number(x.minimum)||Number(x.balance)||0));const pay=Math.min(remaining,due);remaining-=pay;allocations.push({x,pay,short:Math.max(0,due-pay)});});
  const flexible=debts.filter(x=>x.type==="flexible"&&Number(x.balance)>0);
  const flexibleMonthly=flexible.reduce((n,x)=>n+Math.max(0,Number(x.minimum)||0),0);
  const flexibleHtml=flexible.length?'<div class="strategy-heading"><h3>Gastos que podem ser reduzidos</h3><p class="muted">Estes itens não são tratados como dívidas nem recebem pagamentos automaticamente. Se você conseguir reduzir ou pausar algum deles, poderá liberar até '+money(flexibleMonthly)+' por mês, conforme os valores informados.</p></div>'+flexible.map(x=>'<div class="plan-allocation"><span>'+esc(x.title)+'<small>Possível redução mensal informada</small></span><b>'+money(x.minimum||0)+'</b></div>').join(""):'' ;

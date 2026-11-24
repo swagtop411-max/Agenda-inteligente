@@ -338,3 +338,25 @@
 .debt-payoff-list>div{display:flex;justify-content:space-between;gap:10px;padding:6px 0;font-size:12px;color:#647789}
 .debt-payoff-list b{color:#16836d;white-space:nowrap}
 @media(max-width:380px){.debt-schedule{padding:10px}.debt-schedule-debt{font-size:10px}.debt-schedule-meta{font-size:10px}}
+
+
+/* Histórico de pagamentos: ações de correção e exclusão */
+.debt-history-row{align-items:center;flex-wrap:wrap}
+.debt-history-row>div:first-child{display:flex;align-items:center;gap:10px;flex:1;min-width:130px}
+.debt-history-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.debt-history-actions button{font-size:11px;padding:5px 2px}
+.debt-history-actions .danger-button{background:transparent;color:#a33b35}
+
+/* Previsão de compromissos dos próximos meses */
+.forecast-panel{overflow:hidden}
+.forecast-month{padding:13px 0;border-bottom:1px solid #edf1f5}
+.forecast-month:last-of-type{border-bottom:0}
+.forecast-month-head,.forecast-month-values{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.forecast-month-head strong{text-transform:capitalize;color:#263b4d;font-size:14px}
+.forecast-month-head>b{font-size:15px;color:#16805f;font-variant-numeric:tabular-nums}
+.forecast-month-head>b.negative{color:#b94b42}
+.forecast-month-values{margin:8px 0;color:#718096;font-size:12px}
+.forecast-month-values span{display:flex;flex-direction:column;gap:3px}
+.forecast-month-values b{color:#334b5f;font-size:13px}
+.forecast-month>small{font-size:11px}
+.forecast-disclaimer{margin:12px 0 0;color:#87939d;font-size:11px;line-height:1.55}

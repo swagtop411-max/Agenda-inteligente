@@ -16,6 +16,8 @@ function clientReady(){
 function message(text,error=false){lastMessage=text;const el=document.querySelector("#cloudMessage");if(el){el.textContent=text;el.className="auth-message"+(error?" error":"");}}
 function setAuthNav(){document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view==="auth"));}
 function renderAuth(mode="login"){
+ /* Nunca substitua a tela Família por Conta durante uma sincronização/login em segundo plano. */
+ if(activeView!=="auth")return;
  const main=document.querySelector("#mainContent");if(!main)return;
  setAuthNav();
  const signed=!!session;
@@ -99,12 +101,12 @@ async function syncNow(showUI){
   await pushLocal();
   localStorage.setItem(KEY,JSON.stringify(db));
   lastMessage="Sincronização concluída. "+db.events.length+" compromisso(s), "+db.bills.length+" parcela(s), "+db.cards.length+" cartão(ões), "+db.incomes.length+" receita(s) e "+db.debts.length+" dívida(s) disponíveis.";
-  if(showUI)renderAuth();
-  if(activeView!=="family")render();
- }catch(err){lastMessage="Falha na sincronização: "+(err.message||"verifique conexão, login e permissões.");if(showUI)renderAuth();console.error("Agenda Inteligente sync:",err);}
+  if(showUI&&activeView==="auth")renderAuth();
+  if(activeView!=="family"&&activeView!=="auth")render();
+ }catch(err){lastMessage="Falha na sincronização: "+(err.message||"verifique conexão, login e permissões.");if(showUI&&activeView==="auth")renderAuth();console.error("Agenda Inteligente sync:",err);}
  finally{syncBusy=false;}
 }
-async function afterLogin(){renderAuth();await syncNow(true);}
+async function afterLogin(){if(activeView==="auth")renderAuth();await syncNow(true);}
 function queueSync(){if(!session||!client)return;clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncNow(false),1800);}
 const originalSave=save;
 save=function(){originalSave();queueSync();};

@@ -270,6 +270,8 @@ document.addEventListener("click",e=>{
  const go=e.target.closest("[data-go]");if(go){setView(go.dataset.go);return;}
  const edit=e.target.closest("[data-edit-installment]");if(edit){editInstallment(edit.dataset.editInstallment);return;}
  const pay=e.target.closest("[data-pay]");if(pay){let item=db.bills.find(x=>x.id===pay.dataset.pay);if(item){item.paid=!item.paid;save();}return;}
+ const debtPay=e.target.closest("[data-pay-debt]");if(debtPay){openDebtPayment(debtPay.dataset.payDebt);return;}
+ const debtEdit=e.target.closest("[data-edit-debt]");if(debtEdit){openDebtForm(debtEdit.dataset.editDebt);return;}
  const debt=e.target.closest("[data-delete-debt]");if(debt&&confirm("Remover esta dívida do plano?")){db.debts=db.debts.filter(x=>x.id!==debt.dataset.deleteDebt);save();return;}
  const income=e.target.closest("[data-delete-income]");if(income&&confirm("Excluir esta receita?")){db.incomes=db.incomes.filter(x=>x.id!==income.dataset.deleteIncome);save();return;}
  const event=e.target.closest("[data-delete-event]");if(event&&confirm("Excluir este compromisso?")){db.events=db.events.filter(x=>x.id!==event.dataset.deleteEvent);save();return;}

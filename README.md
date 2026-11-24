@@ -73,3 +73,22 @@ O esquema inicial do banco está em `supabase/schema.sql`. Ele cria tabelas para
 - Nenhuma chave secreta ou dado pessoal de backup é armazenado neste repositório.
 
 **Estado:** esquema executado e verificado no projeto Supabase: as sete tabelas existem e RLS está ativado em todas. O front-end agora inclui tela de conta, cadastro/login por e-mail, recuperação de senha, opção de OAuth Google (depende da configuração do provedor no Supabase) e sincronização inicial/por alterações com o banco. A primeira sincronização combina registros locais e remotos por ID e mantém o backup local. Exclusões offline ainda não são propagadas automaticamente; mantenha backups e use a sincronização manual para buscar registros de outros dispositivos.
+
+
+## Notificações push (preparação)
+
+O projeto agora contém:
+- Interface para autorizar notificações no Android.
+- Inscrição individual de cada aparelho, protegida por RLS.
+- Service worker que exibe notificações e abre o aplicativo ao tocar.
+- Edge Function `supabase/functions/send-push/index.ts`, que verifica contas vencendo em 3 dias, 1 dia e no dia, contas atrasadas, compromissos de amanhã e compromissos dentro de 1 hora.
+- Script `supabase/push_setup.sql` para agendar a verificação a cada 15 minutos usando Supabase Cron e Vault.
+
+**Ainda exige configuração no painel Supabase antes de enviar push real:**
+1. Executar novamente o arquivo `supabase/schema.sql` no SQL Editor para criar as tabelas de inscrições e histórico de notificações.
+2. Publicar a Edge Function `send-push` (pasta `supabase/functions/send-push`).
+3. Configurar os secrets `VAPID_PUBLIC_KEY` e `VAPID_PRIVATE_KEY` na função.
+4. Executar `supabase/push_setup.sql` após substituir o marcador da chave service_role pela chave secreta do projeto. Não publicar essa chave no GitHub, em mensagens ou no código do navegador.
+5. Abrir o aplicativo, entrar na conta e tocar em **Ativar notificações** no painel inicial. Autorizar o Android.
+
+A chave pública VAPID usada no front-end é pública por definição. A chave privada deve ficar somente nos secrets do Supabase. A inscrição é por aparelho; cada aparelho precisa autorizar separadamente. Os horários seguem o fuso America/Sao_Paulo e a verificação é feita a cada 15 minutos. O navegador/Android pode aplicar suas próprias restrições de economia de bateria e entrega.

@@ -245,5 +245,5 @@ document.querySelectorAll('[data-view="auth"]').forEach(b=>b.addEventListener("c
 window.addEventListener("online",()=>{if(session){syncState="idle";lastMessage="Conexão restabelecida. Sincronizando alterações...";syncNow(true);}});
 window.addEventListener("offline",()=>{syncState="offline";lastMessage="Sem internet. As alterações ficam salvas neste aparelho até a conexão voltar.";refreshVisibleStatus();});
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&session&&navigator.onLine&&!syncBusy)syncNow(false);});
-window.AgendaInteligenteCloud={sync:()=>syncNow(true),getStatus:()=>statusInfo()};
+window.AgendaInteligenteCloud={sync:()=>syncNow(true),getStatus:()=>statusInfo(),getClient:()=>clientReady(),getSession:()=>session};
 })();

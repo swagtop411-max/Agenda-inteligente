@@ -7,17 +7,17 @@
   <meta name="description" content="Agenda Inteligente: organize compromissos e finanças em um só lugar.">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=20261124-25">
+  <link rel="stylesheet" href="styles.css?v=20261124-26">
   <title>Agenda Inteligente</title>
 </head>
 <body>
   <header class="topbar">
     <div class="brand"><span class="brand-mark">AI</span><div><strong>Agenda Inteligente</strong><small>Organização simples, vida mais leve</small></div></div>
-    <span class="today-label" id="todayLabel"></span>
+    <div class="topbar-actions"><span class="today-label" id="todayLabel"></span><button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="mainNavigation"><span class="menu-toggle-icon">☰</span><span>Menu</span></button></div>
   </header>
   <div class="app-shell">
     <aside class="sidebar">
-      <nav aria-label="Menu principal">
+      <nav id="mainNavigation" aria-label="Menu principal">
         <button class="nav-item active" data-view="home">⌂ <span>Início</span></button>
         <button class="nav-item" data-view="agenda">▦ <span>Agenda</span></button>
         <button class="nav-item" data-view="finance">◈ <span>Financeiro</span></button>
@@ -38,7 +38,7 @@
     </main>
   </div>
   <div id="modalRoot"></div>
-  <script src="app.js?v=20261124-32"></script>
+  <script src="app.js?v=20261124-33"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="cloud.js?v=20261124-1"></script>
 </body>

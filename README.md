@@ -22,6 +22,13 @@ Esta é uma versão inicial funcional para testes individuais. Ela não é um ap
 
 Não cadastre senhas bancárias, números completos de cartões, documentos pessoais ou outras informações altamente confidenciais nesta versão.
 
+## Recursos financeiros recentes
+
+- O histórico de pagamentos de dívidas permite corrigir ou excluir um pagamento; ao excluir, o valor retorna ao saldo em aberto.
+- A inclusão de um pagamento de dívida no fluxo de caixa alerta quando já existe uma despesa com a mesma data e valor.
+- A visão **Compromissos futuros** resume, para seis meses a partir do mês selecionado, receitas cadastradas e despesas pendentes, com resultado previsto por mês.
+- As previsões consideram somente os registros informados no aplicativo e não representam saldo bancário nem consulta a instituições financeiras.
+
 ## Limitações conhecidas
 
 - Não há autenticação por e-mail ou Google.

@@ -27,34 +27,33 @@ function openForm(type){
   const attrs=name==="installments"?'min="1" max="120" value="1"':(inputType==="number"?'min="0" step="0.01"':"");
   return '<div class="field"><label>'+label+'</label><input name="'+name+'" type="'+inputType+'" required '+attrs+'></div>';
  }).join("");
- const editor=(type==="purchase"||type==="bill")?'<section class="installment-editor"><label class="edit-toggle"><input type="checkbox" id="editInstallments"> Quero ajustar manualmente o valor de cada parcela</label><p class="muted" id="installmentHint">A divisão será feita automaticamente. Você poderá ativar o ajuste para corrigir juros ou diferenças.</p><div id="installmentValues" class="hidden"></div><strong id="installmentSum" class="hidden"></strong></section>':"";
+ const editor=(type==="purchase"||type==="bill")?'<section class="installment-editor"><p class="muted">O valor é dividido automaticamente. Se houver juros, altere o valor de uma parcela e todas acompanharão o mesmo valor.</p><div class="field"><label>Valor de cada parcela (R$)</label><input id="installmentUnit" type="number" min="0" step="0.01" value="0.00"></div><strong id="installmentSum"></strong></section>':"";
  root.innerHTML='<div class="modal-backdrop"><div class="modal"><div class="modal-head"><h2>'+cfg.title+'</h2><button class="close" type="button">×</button></div><form id="recordForm">'+fields+editor+'<button class="primary" type="submit">Salvar registro</button></form></div></div>';
  root.querySelector(".close").onclick=()=>{root.innerHTML="";};
  root.querySelector(".modal-backdrop").onclick=e=>{if(e.target.classList.contains("modal-backdrop"))root.innerHTML="";};
  const form=root.querySelector("#recordForm");
- const toggle=root.querySelector("#editInstallments");
- const values=root.querySelector("#installmentValues");
+ const unit=root.querySelector("#installmentUnit");
  const sumLabel=root.querySelector("#installmentSum");
- const hint=root.querySelector("#installmentHint");
  function cents(n){return Math.round((Number(n)||0)*100);}
- function renderInstallments(){
-  if(!toggle||!toggle.checked)return;
-  const total=cents(form.elements.amount.value),count=Math.max(1,Math.min(120,Number(form.elements.installments.value)||1));
-  const base=Math.floor(total/count),remainder=total-base*count;
-  values.innerHTML=Array.from({length:count},(_,i)=>'<div class="field"><label>Valor da parcela '+(i+1)+'</label><input class="installment-value" name="installment_'+(i+1)+'" type="number" min="0" step="0.01" value="'+((base+(i===count-1?remainder:0))/100).toFixed(2)+'" required></div>').join("");
-  values.classList.remove("hidden");sumLabel.classList.remove("hidden");updateSum();
+ function updateUnit(){
+  if(!unit)return;
+  const count=Math.max(1,Math.min(120,Number(form.elements.installments.value)||1));
+  const value=cents(unit.value),sum=value*count;
+  sumLabel.textContent="Total das "+count+" parcelas: "+money(sum/100);
+  if(form.elements.amount)form.elements.amount.value=(sum/100).toFixed(2);
  }
- function updateSum(){
-  if(!toggle||!toggle.checked)return;
-  const sum=[...values.querySelectorAll(".installment-value")].reduce((n,input)=>n+cents(input.value),0);
-  sumLabel.textContent="Soma das parcelas: "+money(sum/100);
-  hint.textContent="Ajuste os valores livremente. A soma das parcelas será o total registrado.";
+ function updateUnitFromTotal(){
+  if(!unit)return;
+  const count=Math.max(1,Math.min(120,Number(form.elements.installments.value)||1));
+  const total=cents(form.elements.amount.value);
+  unit.value=(Math.floor(total/count)/100).toFixed(2);
+  updateUnit();
  }
- if(toggle){
-  toggle.onchange=()=>{if(toggle.checked)renderInstallments();else{values.innerHTML="";values.classList.add("hidden");sumLabel.classList.add("hidden");hint.textContent="A divisão será feita automaticamente. Você poderá ativar o ajuste para corrigir juros ou diferenças.";}};
-  form.elements.amount.oninput=()=>{if(toggle.checked)renderInstallments();};
-  form.elements.installments.oninput=()=>{if(toggle.checked)renderInstallments();};
-  values.oninput=updateSum;
+ if(unit){
+  unit.oninput=updateUnit;
+  form.elements.amount.oninput=updateUnitFromTotal;
+  form.elements.installments.oninput=updateUnitFromTotal;
+  updateUnitFromTotal();
  }
  form.onsubmit=e=>{
   e.preventDefault();
@@ -64,13 +63,10 @@ function openForm(type){
   if(type==="card")db.cards.push({id,...f,limit:+f.limit,closing:+f.closing,due:+f.due});
   if(type==="bill"||type==="purchase"){
    const count=Math.max(1,Math.min(120,+f.installments||1));
-   let amounts;
-   if(toggle&&toggle.checked){
-    amounts=Array.from({length:count},(_,i)=>Math.round((+f["installment_"+(i+1)]||0)*100)/100);
-   }else{
-    const total=cents(f.amount),base=Math.floor(total/count);
-    amounts=Array.from({length:count},(_,i)=>(base+(i===count-1?total-base*count:0))/100);
-   }
+   const unitValue=unit?cents(unit.value):0;
+   const total=cents(f.amount);
+   const base=unit&&unit.value!==""?unitValue:Math.floor(total/count);
+   const amounts=Array.from({length:count},()=>base/100);
    amounts.forEach((amount,i)=>db.bills.push({id:crypto.randomUUID(),groupId:id,title:f.title,amount,date:addMonths(f.date,i),part:i+1,count,paid:false,cardId:f.cardId||"",kind:type}));
   }
   root.innerHTML="";save();

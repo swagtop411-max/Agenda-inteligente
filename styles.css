@@ -114,3 +114,37 @@
 .finance-entry-details summary span:first-child{transform:none!important;display:inline-block!important}
 .finance-entry-details summary .finance-chevron{display:inline-block!important;transform:none!important}
 .finance-entry-details[open] summary .finance-chevron{transform:rotate(180deg)!important}
+
+/* Finance stage 1: income, monthly balance and category budgets */
+.finance-header-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.finance-header-actions button{white-space:nowrap}
+.secondary-button{background:#eaf3fb;color:#246d9f;border:1px solid #d9e9f6;border-radius:12px;padding:12px 15px;font-weight:700;cursor:pointer}
+.finance-summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0 18px}
+.finance-summary-card{display:flex;flex-direction:column;gap:8px;min-width:0;padding:16px;border:1px solid #e3eaf1;border-radius:16px;background:#fff;box-shadow:0 3px 12px rgba(16,42,67,.035)}
+.finance-summary-card small{font-size:12px;color:#718096}
+.finance-summary-card strong{font-size:clamp(19px,5vw,25px);line-height:1.2;color:#18364f;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.finance-summary-card.income{border-top:3px solid #16a085}
+.finance-summary-card.expense{border-top:3px solid #e07863}
+.finance-summary-card.balance{border-top:3px solid #2878b8}
+.finance-summary-card.pending{border-top:3px solid #e2a52c}
+.finance-summary-card strong.negative{color:#b42318}
+.budget-panel{margin-bottom:16px}
+.budget-row{padding:13px 0;border-bottom:1px solid #edf1f5}
+.budget-row:last-child{border-bottom:0}
+.budget-row-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;font-size:13px}
+.budget-row-head strong{color:#20384d}
+.budget-row-head span{color:#526579;font-size:12px;text-align:right;font-variant-numeric:tabular-nums}
+.budget-track{height:10px;background:#edf1f5;border-radius:20px;overflow:hidden}
+.budget-track span{display:block;height:100%;border-radius:20px;background:#16a085;transition:width .25s ease}
+.budget-track span.over{background:#d94c4c}
+.budget-row small{display:block;margin-top:7px;font-size:11px}
+.budget-ok{color:#21805f}
+.budget-over{color:#b42318;font-weight:700}
+.income-entry{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:13px 0;border-bottom:1px solid #edf1f5}
+.income-entry:last-child{border-bottom:0}
+.income-entry>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.income-entry>div strong{font-size:14px;overflow-wrap:anywhere}
+.income-entry>div small{font-size:12px;color:#718096}
+.income-entry>strong{font-size:14px;color:#16805f;white-space:nowrap}
+.income-entry .danger-button{border:0;background:#fff1f0;color:#b42318;border-radius:9px;padding:8px 10px;font-size:11px;font-weight:700}
+@media(max-width:480px){.finance-header-actions{width:100%;margin-top:8px}.finance-header-actions button{flex:1}.finance-summary-grid{gap:9px}.finance-summary-card{padding:13px}.income-entry{grid-template-columns:minmax(0,1fr) auto;gap:8px}.income-entry .danger-button{grid-column:1/-1;justify-self:start}}

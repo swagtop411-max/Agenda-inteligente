@@ -559,3 +559,23 @@
  #mainContent:has(.finance-tabs) .finance-tabs{gap:6px!important}
  #mainContent:has(.finance-tabs) .finance-tabs .finance-tab{font-size:11px!important;padding:7px 4px!important;min-height:46px!important}
 }
+
+
+/* Agenda: navegação por seções no mesmo padrão visual do Financeiro */
+#mainContent:has(.agenda-tabs) .agenda-view-title{align-items:center;gap:12px;margin-bottom:16px}
+#mainContent:has(.agenda-tabs) .agenda-view-title h2{font-size:25px;letter-spacing:-.45px;color:#18324a}
+#mainContent:has(.agenda-tabs) .agenda-view-title .eyebrow{font-size:10px;letter-spacing:1.4px;color:#5b83a4;margin-bottom:4px}
+#mainContent:has(.agenda-tabs)>.field{margin:0 0 15px}
+#mainContent:has(.agenda-tabs)>.field label{font-size:12px;font-weight:700;color:#61758a}
+#mainContent:has(.agenda-tabs)>.field input{height:48px;border:1px solid #dce5ed;border-radius:14px;background:#fff;padding:0 15px;color:#263e53}
+#mainContent:has(.agenda-tabs) .agenda-tabs{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important;overflow:visible!important;padding:4px 0 14px!important;margin:0 0 15px!important;border-bottom:1px solid #e3eaf0!important}
+#mainContent:has(.agenda-tabs) .agenda-tab{display:flex!important;align-items:center!important;justify-content:center!important;gap:7px!important;width:100%!important;min-width:0!important;min-height:48px!important;padding:9px 8px!important;border:1px solid #dce5ed!important;border-radius:13px!important;background:#fff!important;color:#52697c!important;font:650 12px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif!important;box-shadow:0 2px 7px rgba(20,48,72,.045)!important}
+#mainContent:has(.agenda-tabs) .agenda-tab span{display:inline-flex;align-items:center;justify-content:center;min-width:21px;height:21px;padding:0 5px;border-radius:999px;background:#edf3f8;color:#365e7e;font-size:11px;font-weight:750}
+#mainContent:has(.agenda-tabs) .agenda-tab.active{background:#173d5b!important;border-color:#173d5b!important;color:#fff!important;box-shadow:0 4px 11px rgba(23,61,91,.17)!important}
+#mainContent:has(.agenda-tabs) .agenda-tab.active span{background:rgba(255,255,255,.17);color:#fff}
+#mainContent:has(.agenda-tabs) .agenda-tab-panel{display:none!important;min-width:0;animation:financePanelIn .18s ease-out}
+#mainContent:has(.agenda-tabs) .agenda-tab-panel.is-active{display:block!important}
+#mainContent:has(.agenda-tabs) .agenda-tab-panel[hidden]:not(.is-active){display:none!important}
+#mainContent:has(.agenda-tabs) .agenda-tab-panel>.panel{padding:18px;border:1px solid #e2e9ef;border-radius:18px;box-shadow:0 5px 18px rgba(16,42,67,.035)}
+@media(max-width:380px){#mainContent:has(.agenda-tabs) .agenda-tab{font-size:11px!important;gap:5px!important}}
+@media(max-width:520px){#mainContent:has(.agenda-tabs) .agenda-view-title{align-items:center}#mainContent:has(.agenda-tabs) .agenda-view-title h2{font-size:23px}}

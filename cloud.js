@@ -4,9 +4,27 @@
 "use strict";
 const SUPABASE_URL="https://emzpmnnekznhoslfpuui.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY="sb_publishable_6l2-Nhtb3ZgU_RNDeCaEdA_vVLOok1h";
-let client=null,session=null,syncBusy=false,syncTimer=null,lastMessage="";
+let client=null,session=null,syncBusy=false,syncTimer=null,retryTimer=null,retryCount=0,lastMessage="";
+let syncState="checking",lastSyncAt=localStorage.getItem("agendaInteligente_lastCloudSync")||"";
 const tables=["events","cards","bills","incomes","budgets","debts","debt_payments"];
-const statusText=()=>session?("Conectado como "+(session.user.email||"usuário")):"Não conectado";
+function statusInfo(){
+ const connected=!!session;
+ const state=!navigator.onLine?"offline":syncState;
+ const labels={checking:"Verificando conexão...",idle:"Conectado, aguardando alterações",syncing:"Sincronizando seus registros...",synced:"Sincronização concluída",error:"Falha na última sincronização",offline:"Sem internet — alterações salvas neste aparelho"};
+ const when=lastSyncAt?new Date(lastSyncAt).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"}):"Ainda não sincronizado";
+ return {connected,email:session?.user?.email||"",state,label:labels[state]||labels.checking,lastSyncAt,lastSyncLabel:when,message:lastMessage||"",busy:syncBusy};
+}
+function refreshVisibleStatus(){
+ if(activeView==="backup")render();
+ else if(activeView==="auth")renderAuth();
+}
+function scheduleRetry(){
+ if(!session||!navigator.onLine||retryCount>=5)return;
+ clearTimeout(retryTimer);
+ const delay=Math.min(30000*Math.pow(2,retryCount),300000);
+ retryCount++;
+ retryTimer=setTimeout(()=>syncNow(false),delay);
+}
 function clientReady(){
  if(client)return client;
  if(!window.supabase||!window.supabase.createClient)throw new Error("Não foi possível carregar a conexão segura. Verifique sua internet e atualize a página.");
@@ -83,7 +101,14 @@ async function pushLocal(){
  }
 }
 async function syncNow(showUI){
- if(!session||syncBusy)return;syncBusy=true;
+ if(!session||syncBusy)return false;
+ if(!navigator.onLine){
+  syncState="offline";lastMessage="Sem internet. Seus registros continuam salvos neste aparelho e serão sincronizados quando a conexão voltar.";
+  if(showUI)refreshVisibleStatus();
+  return false;
+ }
+ syncBusy=true;syncState="syncing";
+ if(showUI)refreshVisibleStatus();
  try{
   client=clientReady();
   const remote={};for(const t of tables)remote[t]=await getRows(t);
@@ -100,14 +125,30 @@ async function syncNow(showUI){
   localStorage.setItem(KEY,JSON.stringify(db));
   await pushLocal();
   localStorage.setItem(KEY,JSON.stringify(db));
+  lastSyncAt=new Date().toISOString();
+  localStorage.setItem("agendaInteligente_lastCloudSync",lastSyncAt);
+  retryCount=0;clearTimeout(retryTimer);syncState="synced";
   lastMessage="Sincronização concluída. "+db.events.length+" compromisso(s), "+db.bills.length+" parcela(s), "+db.cards.length+" cartão(ões), "+db.incomes.length+" receita(s) e "+db.debts.length+" dívida(s) disponíveis.";
-  if(showUI&&activeView==="auth")renderAuth();
   if(activeView!=="family"&&activeView!=="auth")render();
- }catch(err){lastMessage="Falha na sincronização: "+(err.message||"verifique conexão, login e permissões.");if(showUI&&activeView==="auth")renderAuth();console.error("Agenda Inteligente sync:",err);}
- finally{syncBusy=false;}
+  else if(showUI&&activeView==="auth")renderAuth();
+  return true;
+ }catch(err){
+  syncState=navigator.onLine?"error":"offline";
+  lastMessage=(syncState==="offline"?"Sem internet. Seus dados continuam salvos neste aparelho. ":"Falha na sincronização: ")+(err.message||"verifique conexão, login e permissões.");
+  console.error("Agenda Inteligente sync:",err);
+  scheduleRetry();
+  if(showUI)refreshVisibleStatus();
+  return false;
+ }finally{syncBusy=false;}
 }
 async function afterLogin(){if(activeView==="auth")renderAuth();await syncNow(true);}
-function queueSync(){if(!session||!client)return;clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncNow(false),1800);}
+function queueSync(){
+ if(!session||!client)return;
+ clearTimeout(syncTimer);
+ if(!navigator.onLine){syncState="offline";lastMessage="Alteração salva neste aparelho. Aguardando conexão para sincronizar.";return;}
+ syncState="idle";
+ syncTimer=setTimeout(()=>syncNow(false),1800);
+}
 const originalSave=save;
 save=function(){originalSave();queueSync();};
 const originalSetView=setView;
@@ -119,5 +160,8 @@ document.querySelectorAll('[data-view="auth"]').forEach(b=>b.addEventListener("c
   if(session){lastMessage="Conta conectada. Verificando dados na nuvem...";await syncNow(false);}
  }catch(err){console.warn("Supabase não inicializado:",err);}
 })();
-window.AgendaInteligenteCloud={sync:()=>syncNow(true),getStatus:()=>statusText()};
+window.addEventListener("online",()=>{if(session){syncState="idle";lastMessage="Conexão restabelecida. Sincronizando alterações...";syncNow(true);}});
+window.addEventListener("offline",()=>{syncState="offline";lastMessage="Sem internet. As alterações ficam salvas neste aparelho até a conexão voltar.";refreshVisibleStatus();});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&session&&navigator.onLine&&!syncBusy)syncNow(false);});
+window.AgendaInteligenteCloud={sync:()=>syncNow(true),getStatus:()=>statusInfo()};
 })();

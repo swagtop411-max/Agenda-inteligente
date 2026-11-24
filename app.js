@@ -14,16 +14,43 @@ function setView(v){activeView=v;render();}
 document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>setView(b.dataset.view));
 function row(title,sub,amount="",paid=null,action=""){return '<div class="list-item"><div><strong>'+esc(title)+'</strong><small>'+esc(sub)+'</small></div><div style="text-align:right">'+(amount?'<strong>'+money(amount)+'</strong> ':"")+(paid===null?"":'<span class="pill '+(paid?"paid":"")+'">'+(paid?"Pago":"Pendente")+'</span>')+action+'</div></div>';}
 function openForm(type){
- const cfg={event:["Novo compromisso",[["title","Nome do compromisso","text"],["date","Data","date"],["time","Horário","time"]]],bill:["Nova conta",[["title","Descrição","text"],["amount","Valor total (R$)","number"],["date","Primeiro vencimento","date"],["installments","Parcelas","number"]]],purchase:["Registrar compra",[["title","O que comprou?","text"],["amount","Valor total (R$)","number"],["installments","Parcelas","number"],["date","Primeiro vencimento","date"],["cardId","Cartão (opcional)","select"]]],card:["Cadastrar cartão",[["title","Nome do cartão","text"],["limit","Limite total (R$)","number"],["closing","Dia de fechamento","number"],["due","Dia de vencimento","number"]]]}[type];
+ const configs={
+  event:{title:"Novo compromisso",fields:[["title","Nome do compromisso","text"],["date","Data","date"],["time","Horário","time"]]},
+  bill:{title:"Nova conta",fields:[["title","Descrição","text"],["amount","Valor total (R$)","number"],["date","Primeiro vencimento","date"],["installments","Parcelas","number"]]},
+  purchase:{title:"Registrar compra",fields:[["title","O que comprou?","text"],["amount","Valor total (R$)","number"],["installments","Parcelas","number"],["date","Primeiro vencimento","date"],["cardId","Cartão (opcional)","select"]]},
+  card:{title:"Cadastrar cartão",fields:[["title","Nome do cartão","text"],["limit","Limite total (R$)","number"],["closing","Dia de fechamento","number"],["due","Dia de vencimento","number"]]}
+ };
+ const cfg=configs[type];
+ if(!cfg){alert("Tipo de registro inválido.");return;}
  const root=$("#modalRoot");
- root.innerHTML='<div class="modal-backdrop"><div class="modal"><div class="modal-head"><h2>'+cfg[0]+'</h2><button class="close" type="button">×</button></div><form id="recordForm">'+cfg[1].map(([n,l,t])=>'<div class="field"><label>'+l+'</label>'+(t==="select"?'<select name="cardId"><option value="">Sem cartão</option>'+db.cards.map(c=>'<option value="'+c.id+'">'+esc(c.title)+'</option>').join("")+'</select>':'<input name="'+n+'" type="'+t+'" required '+(n==="installments"?'min="1" max="120" value="1"':'')+(t==="number"&&n!=="installments"?'min="0" step="0.01"':'')+'></div>').join("")+'<button class="primary" type="submit">Salvar registro</button></form></div></div>';
- root.querySelector(".close").onclick=()=>root.innerHTML="";
+ const fields=cfg.fields.map(([name,label,inputType])=>{
+  if(inputType==="select"){
+   const options=db.cards.map(card=>'<option value="'+esc(card.id)+'">'+esc(card.title)+'</option>').join("");
+   return '<div class="field"><label>'+label+'</label><select name="cardId"><option value="">Sem cartão</option>'+options+'</select></div>';
+  }
+  const installmentAttrs=name==="installments"?'min="1" max="120" value="1"':"";
+  const numberAttrs=inputType==="number"&&name!=="installments"?'min="0" step="0.01"':"";
+  return '<div class="field"><label>'+label+'</label><input name="'+name+'" type="'+inputType+'" required '+installmentAttrs+' '+numberAttrs+'></div>';
+ }).join("");
+ root.innerHTML='<div class="modal-backdrop"><div class="modal"><div class="modal-head"><h2>'+cfg.title+'</h2><button class="close" type="button">×</button></div><form id="recordForm">'+fields+'<button class="primary" type="submit">Salvar registro</button></form></div></div>';
+ root.querySelector(".close").onclick=()=>{root.innerHTML="";};
  root.querySelector(".modal-backdrop").onclick=e=>{if(e.target.classList.contains("modal-backdrop"))root.innerHTML="";};
- root.querySelector("form").onsubmit=e=>{e.preventDefault();let f=Object.fromEntries(new FormData(e.target)),id=crypto.randomUUID();
+ root.querySelector("#recordForm").onsubmit=e=>{
+  e.preventDefault();
+  const f=Object.fromEntries(new FormData(e.target));
+  const id=crypto.randomUUID();
   if(type==="event")db.events.push({id,...f});
   if(type==="card")db.cards.push({id,...f,limit:+f.limit,closing:+f.closing,due:+f.due});
-  if(type==="bill"||type==="purchase"){let total=+f.amount,count=Math.max(1,Math.min(120,+f.installments||1)),part=Math.floor(total/count*100)/100;for(let i=0;i<count;i++)db.bills.push({id:crypto.randomUUID(),groupId:id,title:f.title,amount:i===count-1?Math.round((total-part*(count-1))*100)/100:part,date:addMonths(f.date,i),part:i+1,count,paid:false,cardId:f.cardId||"",kind:type});}
-  root.innerHTML="";save();
+  if(type==="bill"||type==="purchase"){
+   const total=+f.amount;
+   const count=Math.max(1,Math.min(120,+f.installments||1));
+   const part=Math.floor(total/count*100)/100;
+   for(let i=0;i<count;i++){
+    db.bills.push({id:crypto.randomUUID(),groupId:id,title:f.title,amount:i===count-1?Math.round((total-part*(count-1))*100)/100:part,date:addMonths(f.date,i),part:i+1,count,paid:false,cardId:f.cardId||"",kind:type});
+   }
+  }
+  root.innerHTML="";
+  save();
  };
 }
 function exportBackup(){

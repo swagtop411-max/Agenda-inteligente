@@ -64,7 +64,7 @@ function localToRemote(){
  const rows={
  events:db.events.map(x=>({id:x.id,user_id:uid,title:x.title,date:x.date,time:x.time||null})),
  cards:db.cards.map(x=>({id:x.id,user_id:uid,title:x.title,limit:Number(x.limit)||0,closing:Number(x.closing)||1,due:Number(x.due)||1})),
- bills:db.bills.map(x=>({id:x.id,user_id:uid,group_id:x.groupId||x.id,title:x.title,amount:Number(x.amount)||0,date:x.date,part:Number(x.part)||1,count:Number(x.count)||1,paid:!!x.paid,card_id:x.cardId||null,kind:x.kind||"bill",category:x.category||"Outros"})),
+ bills:db.bills.map(x=>({id:x.id,user_id:uid,group_id:x.groupId||x.id,title:x.title,amount:Number(x.amount)||0,date:x.date,part:Number(x.part)||1,count:Number(x.count)||1,paid:!!x.paid,card_id:(db.cards.some(card=>card.id===x.cardId)?x.cardId:null),kind:x.kind||"bill",category:x.category||"Outros"})),
  incomes:db.incomes.map(x=>({id:x.id,user_id:uid,title:x.title,amount:Number(x.amount)||0,date:x.date})),
  budgets:Object.entries(db.budgets||{}).flatMap(([month,cats])=>Object.entries(cats||{}).map(([category,amount])=>({user_id:uid,month:month+"-01",category,amount:Number(amount)||0}))),
  debts:db.debts.map(x=>({id:x.id,user_id:uid,title:x.title,type:x.type||"mandatory",balance:Number(x.balance)||0,initial_balance:Number(x.initialBalance??x.balance)||0,minimum:Number(x.minimum)||0,interest:Number(x.interest)||0,date:x.date||null,risk:x.risk||"medium"})),

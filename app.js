@@ -219,7 +219,7 @@ function render(){
   const categories=["Alimentação","Transporte","Moradia","Saúde","Educação","Lazer e diversão","Compras","Contas e serviços","Outros"];
   const drawFinance=()=>{
    const selected=$("#spendingMonth").value;
-   const debtExpenses=db.debts.flatMap(d=>(Array.isArray(d.payments)?d.payments:[]).filter(p=>p.includeInFinance!==false&&String(p.date||"").startsWith(selected)).map(p=>({id:p.id,title:"Pagamento de "+d.title,amount:Number(p.amount)||0,date:p.date,paid:true,category:"Contas e serviços",kind:"debtPayment",note:p.note||""})));
+   const debtExpenses=db.debts.flatMap(d=>(Array.isArray(d.payments)?d.payments:[]).filter(p=>p.includeInFinance===true&&String(p.date||"").startsWith(selected)).map(p=>({id:p.id,title:"Pagamento de "+d.title,amount:Number(p.amount)||0,date:p.date,paid:true,category:"Contas e serviços",kind:"debtPayment",note:p.note||""})));
    const expenses=[...db.bills.filter(x=>String(x.date||"").startsWith(selected)),...debtExpenses];
    const incomes=db.incomes.filter(x=>String(x.date||"").startsWith(selected));
    const expenseTotal=expenses.reduce((sum,x)=>sum+(Number(x.amount)||0),0);

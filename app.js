@@ -2,7 +2,8 @@ const KEY="agendaInteligente_v1";
 let db;
 try { db=JSON.parse(localStorage.getItem(KEY)||'{"events":[],"bills":[],"cards":[]}'); } catch { db={events:[],bills:[],cards:[]}; }
 if(!db || typeof db!=="object") db={};
-db={events:Array.isArray(db.events)?db.events:[],bills:Array.isArray(db.bills)?db.bills:[],cards:Array.isArray(db.cards)?db.cards:[]};
+db={events:Array.isArray(db.events)?db.events:[],bills:Array.isArray(db.bills)?db.bills:[],cards:Array.isArray(db.cards)?db.cards:[],incomes:Array.isArray(db.incomes)?db.incomes:[],budgets:db.budgets&&typeof db.budgets==="object"?db.budgets:{}};
+db.bills.forEach(x=>{if(!x.category)x.category="Outros";});
 let activeView="home";
 const $=s=>document.querySelector(s);
 const money=n=>Number(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
@@ -16,16 +17,21 @@ function row(title,sub,amount="",paid=null,action=""){return '<div class="list-i
 function openForm(type){
  const configs={
   event:{title:"Novo compromisso",fields:[["title","Nome do compromisso","text"],["date","Data","date"],["time","Horário","time"]]},
-  bill:{title:"Nova conta",fields:[["title","Descrição","text"],["amount","Valor total (R$)","number"],["date","Primeiro vencimento","date"],["installments","Parcelas","number"]]},
-  purchase:{title:"Registrar compra",fields:[["title","O que comprou?","text"],["amount","Valor total da compra (R$)","number"],["installments","Parcelas","number"],["date","Primeiro vencimento","date"],["cardId","Cartão (opcional)","select"]]},
-  card:{title:"Cadastrar cartão",fields:[["title","Nome do cartão","text"],["limit","Limite total (R$)","number"],["closing","Dia de fechamento","number"],["due","Dia de vencimento","number"]]}
+  bill:{title:"Nova conta",fields:[["title","Descrição","text"],["category","Categoria","category"],["amount","Valor total (R$)","number"],["date","Primeiro vencimento","date"],["installments","Parcelas","number"]]},
+  purchase:{title:"Registrar compra",fields:[["title","O que comprou?","text"],["category","Categoria","category"],["amount","Valor total da compra (R$)","number"],["installments","Parcelas","number"],["date","Primeiro vencimento","date"],["cardId","Cartão (opcional)","select"]]},
+  card:{title:"Cadastrar cartão",fields:[["title","Nome do cartão","text"],["limit","Limite total (R$)","number"],["closing","Dia de fechamento","number"],["due","Dia de vencimento","number"]]},
+  income:{title:"Registrar receita",fields:[["title","Descrição da receita","text"],["amount","Valor recebido (R$)","number"],["date","Data do recebimento","date"]]},
+  budget:{title:"Definir orçamento mensal",fields:[["month","Mês do orçamento","month"],["category","Categoria","category"],["amount","Limite mensal (R$)","number"]]}
  };
  const cfg=configs[type];if(!cfg){alert("Tipo de registro inválido.");return;}
+ const categories=["Alimentação","Transporte","Moradia","Saúde","Educação","Lazer e diversão","Compras","Contas e serviços","Outros"];
  const root=$("#modalRoot");
  const fields=cfg.fields.map(([name,label,inputType])=>{
   if(inputType==="select"){const options=db.cards.map(card=>'<option value="'+esc(card.id)+'">'+esc(card.title)+'</option>').join("");return '<div class="field"><label>'+label+'</label><select name="cardId"><option value="">Sem cartão</option>'+options+'</select></div>';}
+  if(inputType==="category"){const options=categories.map(cat=>'<option value="'+cat+'">'+cat+'</option>').join("");return '<div class="field"><label>'+label+'</label><select name="category">'+options+'</select></div>';}
   const attrs=name==="installments"?'min="1" max="120" value="1"':(inputType==="number"?'min="0" step="0.01"':"");
-  return '<div class="field"><label>'+label+'</label><input name="'+name+'" type="'+inputType+'" required '+attrs+'></div>';
+  const defaultValue=name==="month"?'value="'+new Date().toISOString().slice(0,7)+'"':"";
+  return '<div class="field"><label>'+label+'</label><input name="'+name+'" type="'+inputType+'" required '+attrs+' '+defaultValue+'></div>';
  }).join("");
  const editor=(type==="purchase"||type==="bill")?'<section class="installment-editor"><p class="muted">O valor é dividido automaticamente. Se houver juros, altere o valor de uma parcela e todas acompanharão o mesmo valor.</p><div class="field"><label>Valor de cada parcela (R$)</label><input id="installmentUnit" type="number" min="0" step="0.01" value="0.00"></div><strong id="installmentSum"></strong></section>':"";
  root.innerHTML='<div class="modal-backdrop"><div class="modal"><div class="modal-head"><h2>'+cfg.title+'</h2><button class="close" type="button">×</button></div><form id="recordForm">'+fields+editor+'<button class="primary" type="submit">Salvar registro</button></form></div></div>';
@@ -61,13 +67,15 @@ function openForm(type){
   const id=crypto.randomUUID();
   if(type==="event")db.events.push({id,...f});
   if(type==="card")db.cards.push({id,...f,limit:+f.limit,closing:+f.closing,due:+f.due});
+  if(type==="income")db.incomes.push({id,title:f.title,amount:Math.round(Number(f.amount)*100)/100,date:f.date});
+  if(type==="budget"){if(!db.budgets[f.month])db.budgets[f.month]={};db.budgets[f.month][f.category]=Math.round(Number(f.amount)*100)/100;}
   if(type==="bill"||type==="purchase"){
    const count=Math.max(1,Math.min(120,+f.installments||1));
    const unitValue=unit?cents(unit.value):0;
    const total=cents(f.amount);
    const base=unit&&unit.value!==""?unitValue:Math.floor(total/count);
    const amounts=Array.from({length:count},()=>base/100);
-   amounts.forEach((amount,i)=>db.bills.push({id:crypto.randomUUID(),groupId:id,title:f.title,amount,date:addMonths(f.date,i),part:i+1,count,paid:false,cardId:f.cardId||"",kind:type}));
+   amounts.forEach((amount,i)=>db.bills.push({id:crypto.randomUUID(),groupId:id,title:f.title,amount,date:addMonths(f.date,i),part:i+1,count,paid:false,cardId:f.cardId||"",category:f.category||"Outros",kind:type}));
   }
   root.innerHTML="";save();
  };
@@ -89,7 +97,7 @@ function editInstallment(id){
  };
 }
 function exportBackup(){
- const payload={format:"agenda-inteligente-backup-v1",exportedAt:new Date().toISOString(),data:db};
+ const payload={format:"agenda-inteligente-backup-v2",exportedAt:new Date().toISOString(),data:db};
  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
  const url=URL.createObjectURL(blob),a=document.createElement("a");
  a.href=url;a.download="agenda-inteligente-backup.json";a.click();URL.revokeObjectURL(url);
@@ -110,24 +118,38 @@ function render(){
   const draw=()=>{let m=$("#monthFilter").value,arr=[...db.events.map(x=>({...x,kind:"event"})),...db.bills.map(x=>({...x,kind:"bill"}))].filter(x=>x.date.startsWith(m)).sort((a,b)=>a.date.localeCompare(b.date));$("#agendaItems").innerHTML=arr.length?arr.map(x=>row(x.title,fmt(x.date)+(x.time?" • "+x.time:"")+(x.kind==="bill"?" • Parcela "+x.part+"/"+x.count:""),x.kind==="bill"?x.amount:"",x.kind==="bill"?x.paid:null,'<br><button class="danger-button" data-delete-'+(x.kind==="bill"?"bill":"event")+'="'+(x.kind==="bill"?(x.groupId||x.id):x.id)+'">Excluir</button>')).join(""):'<div class="empty">Sem registros neste mês.</div>';};
   $("#monthFilter").onchange=draw;draw();$("#addEvent").onclick=()=>openForm("event");
  } else if(activeView==="finance"){
-  main.innerHTML='<div class="view-title"><h2>Financeiro</h2><button class="primary" id="addBill">＋ Conta</button></div><div class="finance-overview"><div class="stat-card"><small>Total pendente</small><strong>'+money(pending.reduce((s,x)=>s+x.amount,0))+'</strong></div><div class="stat-card"><small>Gastos do mês</small><strong id="monthSpent">R$ 0,00</strong></div></div><section class="panel spending-panel"><div class="panel-heading"><div><p class="eyebrow">PARA ONDE VAI SEU DINHEIRO?</p><h2>Gastos por categoria</h2></div></div><div class="field"><label>Mês analisado</label><input id="spendingMonth" type="month" value="'+month+'"></div><div id="spendingBreakdown"></div></section><section class="panel"><div class="panel-heading"><div><p class="eyebrow">LANÇAMENTOS</p><h2>Contas e despesas</h2></div></div><div id="financeItems" class="list-area"></div></section>';
-  const drawSpending=()=>{
+  main.innerHTML='<div class="view-title"><h2>Financeiro</h2><div class="finance-header-actions"><button class="secondary-button" id="addIncome">＋ Receita</button><button class="primary" id="addBill">＋ Despesa</button></div></div><div class="field"><label>Mês analisado</label><input id="spendingMonth" type="month" value="'+month+'"></div><div class="finance-summary-grid"><article class="finance-summary-card income"><small>Receitas do mês</small><strong id="monthIncome">R$ 0,00</strong></article><article class="finance-summary-card expense"><small>Despesas do mês</small><strong id="monthSpent">R$ 0,00</strong></article><article class="finance-summary-card balance"><small>Saldo do mês</small><strong id="monthBalance">R$ 0,00</strong></article><article class="finance-summary-card pending"><small>Total pendente</small><strong id="pendingTotal">'+money(pending.reduce((sum,x)=>sum+(Number(x.amount)||0),0))+'</strong></article></div><section class="panel budget-panel"><div class="panel-heading"><div><p class="eyebrow">PLANEJAMENTO</p><h2>Orçamento por categoria</h2></div><button class="text-button" id="addBudget">＋ Definir limite</button></div><div id="budgetItems"></div></section><section class="panel spending-panel"><div class="panel-heading"><div><p class="eyebrow">ANÁLISE</p><h2>Gastos por categoria</h2></div></div><div id="spendingBreakdown"></div></section><section class="panel"><div class="panel-heading"><div><p class="eyebrow">ENTRADAS</p><h2>Receitas recebidas</h2></div></div><div id="incomeItems" class="list-area"></div></section><section class="panel"><div class="panel-heading"><div><p class="eyebrow">SAÍDAS</p><h2>Contas e despesas</h2></div></div><div id="financeItems" class="list-area"></div></section>';
+  const categories=["Alimentação","Transporte","Moradia","Saúde","Educação","Lazer e diversão","Compras","Contas e serviços","Outros"];
+  const drawFinance=()=>{
    const selected=$("#spendingMonth").value;
-   const entries=db.bills.filter(x=>String(x.date||"").startsWith(selected));
-   const total=entries.reduce((s,x)=>s+(Number(x.amount)||0),0);
-   $("#monthSpent").textContent=money(total);
+   const expenses=db.bills.filter(x=>String(x.date||"").startsWith(selected));
+   const incomes=db.incomes.filter(x=>String(x.date||"").startsWith(selected));
+   const expenseTotal=expenses.reduce((sum,x)=>sum+(Number(x.amount)||0),0);
+   const incomeTotal=incomes.reduce((sum,x)=>sum+(Number(x.amount)||0),0);
+   const balance=incomeTotal-expenseTotal;
+   $("#monthIncome").textContent=money(incomeTotal);
+   $("#monthSpent").textContent=money(expenseTotal);
+   $("#monthBalance").textContent=money(balance);
+   $("#monthBalance").classList.toggle("negative",balance<0);
+   $("#pendingTotal").textContent=money(expenses.filter(x=>!x.paid).reduce((sum,x)=>sum+(Number(x.amount)||0),0));
    const groups={};
-   entries.forEach(x=>{const cat=x.category||"Outros";groups[cat]=(groups[cat]||0)+(Number(x.amount)||0);});
+   expenses.forEach(x=>{const cat=x.category||"Outros";groups[cat]=(groups[cat]||0)+(Number(x.amount)||0);});
    const palette=["#2878B8","#16A085","#F39C12","#8E63CE","#E05D6F","#28A6A1","#6574CD","#A67C52","#8795A1"];
    const ordered=Object.entries(groups).sort((a,b)=>b[1]-a[1]);
    let cursor=0;
-   const segments=ordered.map(([cat,value],i)=>{const pct=total>0?value/total*100:0;const from=cursor;cursor+=pct;return {cat,value,pct,color:palette[i%palette.length],from,to:cursor};});
+   const segments=ordered.map(([cat,value],i)=>{const pct=expenseTotal>0?value/expenseTotal*100:0;const from=cursor;cursor+=pct;return {cat,value,pct,color:palette[i%palette.length],from,to:cursor};});
    const gradient=segments.map(x=>x.color+" "+x.from.toFixed(2)+"% "+x.to.toFixed(2)+"%").join(",");
-   $("#spendingBreakdown").innerHTML=ordered.length?'<div class="spending-total"><strong>'+money(total)+'</strong><small>'+entries.length+' lançamento(s) no mês, pagos e pendentes</small></div><div class="spending-chart-layout"><div class="spending-donut" style="background:conic-gradient('+gradient+')"><div class="spending-donut-hole"><strong>'+money(total)+'</strong><small>Total do mês</small></div></div><div class="spending-legend">'+segments.map(x=>'<div class="spending-legend-item"><span class="spending-dot" style="background:'+x.color+'"></span><div class="spending-legend-label"><strong>'+esc(x.cat)+'</strong><small>'+money(x.value)+'</small></div><b>'+x.pct.toFixed(1).replace(".",",")+'%</b></div>').join("")+'</div></div>':'<div class="empty">Nenhuma despesa registrada neste mês. Ao cadastrar contas ou compras, escolha uma categoria para acompanhar seus gastos.</div>';
+   $("#spendingBreakdown").innerHTML=ordered.length?'<div class="spending-total"><strong>'+money(expenseTotal)+'</strong><small>'+expenses.length+' lançamento(s) no mês</small></div><div class="spending-chart-layout"><div class="spending-donut" style="background:conic-gradient('+gradient+')"><div class="spending-donut-hole"><strong>'+money(expenseTotal)+'</strong><small>Total de despesas</small></div></div><div class="spending-legend">'+segments.map(x=>'<div class="spending-legend-item"><span class="spending-dot" style="background:'+x.color+'"></span><div class="spending-legend-label"><strong>'+esc(x.cat)+'</strong><small>'+money(x.value)+'</small></div><b>'+x.pct.toFixed(1).replace(".",",")+'%</b></div>').join("")+'</div></div>':'<div class="empty">Nenhuma despesa registrada neste mês.</div>';
+   const monthBudgets=db.budgets[selected]||{};
+   const budgetRows=Object.entries(monthBudgets).sort((a,b)=>a[0].localeCompare(b[0]));
+   $("#budgetItems").innerHTML=budgetRows.length?budgetRows.map(([cat,limit])=>{const spent=groups[cat]||0,pct=limit>0?spent/limit*100:0,over=spent>limit;return '<div class="budget-row"><div class="budget-row-head"><strong>'+esc(cat)+'</strong><span>'+money(spent)+' / '+money(limit)+'</span></div><div class="budget-track"><span class="'+(over?"over":"")+'" style="width:'+Math.min(100,pct)+'%"></span></div><small class="'+(over?"budget-over":"budget-ok")+'">'+(over?"Limite ultrapassado em "+money(spent-limit):pct>=80?"Atenção: "+pct.toFixed(0)+"% do limite utilizado":pct.toFixed(0)+"% do limite utilizado")+'</small></div>';}).join(""):'<div class="empty">Defina limites para acompanhar seus gastos por categoria.</div>';
+   $("#incomeItems").innerHTML=incomes.length?incomes.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(x=>'<div class="income-entry"><div><strong>'+esc(x.title)+'</strong><small>'+fmt(x.date)+'</small></div><strong>'+money(x.amount)+'</strong><button class="danger-button" data-delete-income="'+x.id+'">Excluir</button></div>').join(""):'<div class="empty">Nenhuma receita registrada neste mês.</div>';
+   $("#financeItems").innerHTML=expenses.length?expenses.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(x=>'<article class="finance-entry"><div class="finance-entry-head"><div class="finance-entry-main"><span class="finance-entry-icon">↗</span><div class="finance-entry-name"><strong>'+esc(x.title)+'</strong><small>Parcela '+x.part+' de '+x.count+'</small></div></div><strong class="finance-entry-amount">'+money(x.amount)+'</strong></div><div class="finance-entry-info"><span class="finance-category">'+esc(x.category||"Outros")+'</span><span class="finance-due">Vencimento · '+fmt(x.date)+'</span><span class="finance-status '+(x.paid?"is-paid":"is-pending")+'">'+(x.paid?"Pago":"Pendente")+'</span></div><details class="finance-entry-details"><summary><span>Gerenciar lançamento</span><span class="finance-chevron">⌄</span></summary><div class="finance-entry-actions"><button class="text-button" data-pay="'+x.id+'">'+(x.paid?"Desfazer pagamento":"Marcar como pago")+'</button><button class="text-button" data-edit-installment="'+x.id+'">Editar parcela</button><button class="danger-button" data-delete-bill="'+(x.groupId||x.id)+'">Excluir compra</button></div></details></article>').join(""):'<div class="empty">Nenhuma despesa cadastrada neste mês.</div>';
   };
-  $("#spendingMonth").onchange=drawSpending;drawSpending();
-  $("#financeItems").innerHTML=db.bills.length?db.bills.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(x=>'<article class="finance-entry"><div class="finance-entry-head"><div class="finance-entry-main"><span class="finance-entry-icon">↗</span><div class="finance-entry-name"><strong>'+esc(x.title)+'</strong><small>Parcela '+x.part+' de '+x.count+'</small></div></div><strong class="finance-entry-amount">'+money(x.amount)+'</strong></div><div class="finance-entry-info"><span class="finance-category">'+esc(x.category||"Outros")+'</span><span class="finance-due">Vencimento · '+fmt(x.date)+'</span><span class="finance-status '+(x.paid?"is-paid":"is-pending")+'">'+(x.paid?"Pago":"Pendente")+'</span></div><details class="finance-entry-details"><summary><span>Gerenciar lançamento</span><span class="finance-chevron">⌄</span></summary><div class="finance-entry-actions"><button class="text-button" data-pay="'+x.id+'">'+(x.paid?"Desfazer pagamento":"Marcar como pago")+'</button><button class="text-button" data-edit-installment="'+x.id+'">Editar parcela</button><button class="danger-button" data-delete-bill="'+(x.groupId||x.id)+'">Excluir compra</button></div></details></article>').join(""):'<div class="empty">Nenhuma conta cadastrada.</div>';
+  $("#spendingMonth").onchange=drawFinance;drawFinance();
+  $("#addIncome").onclick=()=>openForm("income");
   $("#addBill").onclick=()=>openForm("bill");
+  $("#addBudget").onclick=()=>openForm("budget");
  } else if(activeView==="cards"){
   main.innerHTML='<div class="view-title"><h2>Meus cartões</h2><button class="primary" id="addCard">＋ Cartão</button></div><div id="cardsItems" class="list-area"></div>';
   $("#cardsItems").innerHTML=db.cards.length?db.cards.map(c=>{let used=db.bills.filter(x=>x.cardId===c.id&&!x.paid).reduce((s,x)=>s+x.amount,0);return '<div class="card-box"><strong>'+esc(c.title)+'</strong><strong>'+money(c.limit)+'</strong><small>Disponível: '+money(Math.max(0,c.limit-used))+' • Fecha dia '+c.closing+' • Vence dia '+c.due+'</small><br><button class="card-delete" data-delete-card="'+c.id+'">Excluir cartão</button></div>';}).join(""):'<div class="empty">Cadastre seu primeiro cartão.</div>';
@@ -142,6 +164,7 @@ document.addEventListener("click",e=>{
  const go=e.target.closest("[data-go]");if(go){setView(go.dataset.go);return;}
  const edit=e.target.closest("[data-edit-installment]");if(edit){editInstallment(edit.dataset.editInstallment);return;}
  const pay=e.target.closest("[data-pay]");if(pay){let item=db.bills.find(x=>x.id===pay.dataset.pay);if(item){item.paid=!item.paid;save();}return;}
+ const income=e.target.closest("[data-delete-income]");if(income&&confirm("Excluir esta receita?")){db.incomes=db.incomes.filter(x=>x.id!==income.dataset.deleteIncome);save();return;}
  const event=e.target.closest("[data-delete-event]");if(event&&confirm("Excluir este compromisso?")){db.events=db.events.filter(x=>x.id!==event.dataset.deleteEvent);save();return;}
  const bill=e.target.closest("[data-delete-bill]");if(bill&&confirm("Excluir todas as parcelas deste lançamento?")){db.bills=db.bills.filter(x=>(x.groupId||x.id)!==bill.dataset.deleteBill);save();return;}
  const card=e.target.closest("[data-delete-card]");if(card&&confirm("Excluir este cartão? Os lançamentos vinculados serão mantidos.")){db.cards=db.cards.filter(x=>x.id!==card.dataset.deleteCard);save();return;}
@@ -151,7 +174,7 @@ document.addEventListener("change",e=>{
  if(e.target.id==="importBackup"){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();reader.onload=()=>{
-   try{const parsed=JSON.parse(reader.result),data=parsed.data||parsed;if(!Array.isArray(data.events)||!Array.isArray(data.bills)||!Array.isArray(data.cards))throw new Error("Formato inválido");if(confirm("Restaurar este backup? Os dados atuais serão substituídos.")){db={events:data.events,bills:data.bills,cards:data.cards};save();alert("Backup restaurado com sucesso.");}}
+   try{const parsed=JSON.parse(reader.result),data=parsed.data||parsed;if(!Array.isArray(data.events)||!Array.isArray(data.bills)||!Array.isArray(data.cards))throw new Error("Formato inválido");if(confirm("Restaurar este backup? Os dados atuais serão substituídos.")){db={events:data.events,bills:data.bills,cards:data.cards,incomes:Array.isArray(data.incomes)?data.incomes:[],budgets:data.budgets&&typeof data.budgets==="object"?data.budgets:{}};db.bills.forEach(x=>{if(!x.category)x.category="Outros";});save();alert("Backup restaurado com sucesso.");}}
    catch(err){alert("Não foi possível restaurar: arquivo inválido.");}
   };reader.readAsText(file);e.target.value="";
  }

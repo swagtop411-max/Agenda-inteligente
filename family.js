@@ -67,6 +67,5 @@ async function show(){
   });
  }catch(x){document.querySelector("#familyContent").innerHTML='<p class="muted">A base de Família ainda precisa ser preparada no Supabase. Execute o arquivo <strong>supabase/family.sql</strong> no SQL Editor do projeto e depois atualize o aplicativo.</p>';note(x.message||"Não foi possível carregar as famílias.",true);}
 }
-document.addEventListener("click",e=>{const b=e.target.closest('[data-view="family"]');if(!b)return;e.preventDefault();e.stopImmediatePropagation();show();const sidebar=document.querySelector(".sidebar");if(sidebar)sidebar.classList.remove("menu-open");const toggle=document.querySelector("#menuToggle");if(toggle){toggle.setAttribute("aria-expanded","false");toggle.querySelector(".menu-toggle-icon").textContent="☰";toggle.querySelector("span:last-child").textContent="Menu";}},true);
 window.AgendaInteligenteFamily={open:show};
 })();

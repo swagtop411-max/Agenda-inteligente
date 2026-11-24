@@ -9,8 +9,8 @@ let syncState="checking",lastSyncAt=localStorage.getItem("agendaInteligente_last
 const tables=["events","cards","bills","incomes","budgets","debts","debt_payments"];
 function statusInfo(){
  const connected=!!session;
- const state=!navigator.onLine?"offline":syncState;
- const labels={checking:"Verificando conexão...",idle:"Conectado, aguardando alterações",syncing:"Sincronizando seus registros...",synced:"Sincronização concluída",error:"Falha na última sincronização",offline:"Sem internet — alterações salvas neste aparelho"};
+ const state=!connected?"disconnected":!navigator.onLine?"offline":syncState;
+ const labels={disconnected:"Entre na sua conta para ativar a sincronização",checking:"Verificando conexão...",idle:"Conectado, aguardando alterações",syncing:"Sincronizando seus registros...",synced:"Sincronização concluída",error:"Falha na última sincronização",offline:"Sem internet — alterações salvas neste aparelho"};
  const when=lastSyncAt?new Date(lastSyncAt).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"}):"Ainda não sincronizado";
  return {connected,email:session?.user?.email||"",state,label:labels[state]||labels.checking,lastSyncAt,lastSyncLabel:when,message:lastMessage||"",busy:syncBusy};
 }
@@ -129,17 +129,14 @@ async function syncNow(showUI){
   localStorage.setItem("agendaInteligente_lastCloudSync",lastSyncAt);
   retryCount=0;clearTimeout(retryTimer);syncState="synced";
   lastMessage="Sincronização concluída. "+db.events.length+" compromisso(s), "+db.bills.length+" parcela(s), "+db.cards.length+" cartão(ões), "+db.incomes.length+" receita(s) e "+db.debts.length+" dívida(s) disponíveis.";
-  if(activeView!=="family"&&activeView!=="auth")render();
-  else if(showUI&&activeView==="auth")renderAuth();
   return true;
  }catch(err){
   syncState=navigator.onLine?"error":"offline";
   lastMessage=(syncState==="offline"?"Sem internet. Seus dados continuam salvos neste aparelho. ":"Falha na sincronização: ")+(err.message||"verifique conexão, login e permissões.");
   console.error("Agenda Inteligente sync:",err);
   scheduleRetry();
-  if(showUI)refreshVisibleStatus();
   return false;
- }finally{syncBusy=false;}
+ }finally{syncBusy=false;if(activeView==="backup"||(showUI&&activeView==="auth"))refreshVisibleStatus();}
 }
 async function afterLogin(){if(activeView==="auth")renderAuth();await syncNow(true);}
 function queueSync(){

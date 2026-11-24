@@ -61,3 +61,15 @@ No Android, abra o endereço no Chrome e use o menu do navegador para **Instalar
 ## Desenvolvimento
 
 O projeto é estático: `index.html`, `styles.css` e `app.js`. O GitHub Actions valida a sintaxe do JavaScript e o JSON do manifesto em cada alteração.
+
+
+## Backend Supabase (preparação inicial)
+
+O esquema inicial do banco está em `supabase/schema.sql`. Ele cria tabelas para compromissos, cartões, contas/parcelas, receitas, orçamentos, dívidas e pagamentos de dívidas.
+
+- Todas as tabelas têm `user_id` ligado a `auth.users`.
+- Row Level Security (RLS) fica habilitado em todas as tabelas.
+- As políticas permitem operações somente para o usuário autenticado dono dos registros.
+- Nenhuma chave secreta ou dado pessoal de backup é armazenado neste repositório.
+
+**Estado:** esquema preparado, mas ainda não executado no projeto Supabase. O app ainda usa armazenamento local; login, sincronização e importação não estão ativos. Antes de ativá-los, será necessário executar o SQL no Supabase SQL Editor, configurar autenticação e testar a migração com segurança.

@@ -4,6 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#102a43">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Agenda Inteligente">
+  <link rel="apple-touch-icon" href="icon.svg">
   <meta name="description" content="Agenda Inteligente: organize compromissos e finanças em um só lugar.">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -13,7 +18,7 @@
 <body>
   <header class="topbar">
     <div class="brand"><span class="brand-mark">AI</span><div><strong>Agenda Inteligente</strong><small>Organização simples, vida mais leve</small></div></div>
-    <div class="topbar-actions"><span class="today-label" id="todayLabel"></span><button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="mainNavigation"><span class="menu-toggle-icon">☰</span><span>Menu</span></button></div>
+    <div class="topbar-actions"><span class="today-label" id="todayLabel"></span><button class="menu-toggle install-app-button" id="installAppButton" type="button" aria-label="Instalar Agenda Inteligente">＋ Instalar</button><button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="mainNavigation"><span class="menu-toggle-icon">☰</span><span>Menu</span></button></div>
   </header>
   <div class="app-shell">
     <aside class="sidebar">
@@ -39,9 +44,40 @@
     </main>
   </div>
   <div id="modalRoot"></div>
-  <script src="app.js?v=20261124-37"></script>
+  <script src="app.js?v=20261124-38"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="cloud.js?v=20261124-4"></script>
 <script src="family.js?v=20261124-5"></script>
+<script>
+(function(){
+  "use strict";
+  var deferredInstall=null;
+  var installButton=document.getElementById("installAppButton");
+  var isStandalone=window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone===true;
+  if(isStandalone){installButton.hidden=true;}
+  window.addEventListener("beforeinstallprompt",function(event){
+    event.preventDefault();
+    deferredInstall=event;
+    installButton.hidden=false;
+    installButton.textContent="＋ Instalar";
+  });
+  installButton.addEventListener("click",async function(){
+    if(deferredInstall){
+      deferredInstall.prompt();
+      await deferredInstall.userChoice;
+      deferredInstall=null;
+      installButton.hidden=true;
+      return;
+    }
+    alert("Para instalar: abra o menu do Chrome (⋮) e escolha 'Instalar app' ou 'Adicionar à tela inicial'. Se a opção não aparecer, atualize a página e tente novamente.");
+  });
+  window.addEventListener("appinstalled",function(){installButton.hidden=true;});
+  if("serviceWorker" in navigator){
+    window.addEventListener("load",function(){
+      navigator.serviceWorker.register("./sw.js").catch(function(error){console.warn("Não foi possível ativar o modo instalável/offline:",error);});
+    });
+  }
+})();
+</script>
 </body>
 </html>

@@ -97,7 +97,7 @@ declare
   v_expiry timestamptz;
 begin
   if v_uid is null then raise exception 'É necessário entrar na conta.'; end if;
-  if v_email !~* '^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$' then
+  if v_email !~* '^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$' then
     raise exception 'Informe um e-mail válido.';
   end if;
   if not exists (

@@ -684,3 +684,31 @@
 #mainContent:has(.dashboard-stat) .quick-card strong{font-size:12px}
 #mainContent:has(.dashboard-stat) .quick-card small{font-size:10px;line-height:1.4}
 @media(max-width:600px){#mainContent:has(.dashboard-stat) .welcome{align-items:flex-start;gap:9px}#mainContent:has(.dashboard-stat) .welcome h1{font-size:23px}#mainContent:has(.dashboard-stat) .welcome .primary-button{padding:9px 11px;font-size:11px;white-space:nowrap}#mainContent:has(.dashboard-stat) .stats-grid{gap:9px}#mainContent:has(.dashboard-stat) .dashboard-stat{min-height:85px;padding:13px 10px 11px 13px}#mainContent:has(.dashboard-stat) .dashboard-stat strong{font-size:clamp(15px,4.2vw,20px)}#mainContent:has(.dashboard-stat) .content-grid .panel{padding:13px}}
+
+
+/* Família: navegação por seções para reduzir rolagem e excesso de formulários */
+#mainContent:has(.family-tabs) .family-card{padding:23px;border-radius:22px}
+#mainContent:has(.family-tabs) .family-card>h2{font-size:27px;letter-spacing:-.5px;color:#1c344a}
+#mainContent:has(.family-tabs) .family-card>.muted{font-size:14px;line-height:1.55;margin-bottom:18px}
+#mainContent:has(.family-tabs) .family-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:18px 0 15px;padding:4px;border:1px solid #e1e8ef;border-radius:15px;background:#f3f7fa}
+#mainContent:has(.family-tabs) .family-tab{min-width:0;min-height:43px;padding:8px 5px;border:1px solid transparent;border-radius:11px;background:transparent;color:#64788a;font:650 11px/1.25 system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer}
+#mainContent:has(.family-tabs) .family-tab.active{background:#173d5b;color:#fff;box-shadow:0 3px 9px rgba(23,61,91,.15)}
+#mainContent:has(.family-tabs) .family-panel{display:none;min-width:0;padding:15px;border:1px solid #e2eaf0;border-radius:16px;background:#fff;animation:financePanelIn .18s ease-out}
+#mainContent:has(.family-tabs) .family-panel.is-active{display:block}
+#mainContent:has(.family-tabs) .family-panel[hidden]:not(.is-active){display:none}
+#mainContent:has(.family-tabs) .family-panel-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+#mainContent:has(.family-tabs) .family-panel-heading h3{margin:0;color:#20394f;font-size:17px}
+#mainContent:has(.family-tabs) .family-panel-heading small{display:block;margin-top:4px;color:#7b8997;font-size:11px}
+#mainContent:has(.family-tabs) .family-count{display:grid;place-items:center;min-width:30px;height:30px;padding:0 8px;border-radius:50px;background:#edf4f9;color:#315e80;font-size:12px;font-weight:800}
+#mainContent:has(.family-tabs) .family-group{padding:14px 0;border-bottom:1px solid #edf1f5}
+#mainContent:has(.family-tabs) .family-group:last-child{border-bottom:0}
+#mainContent:has(.family-tabs) .family-group strong{font-size:14px}
+#mainContent:has(.family-tabs) .family-group small{font-size:11px}
+#mainContent:has(.family-tabs) .family-empty{display:grid;gap:6px;padding:19px 10px;text-align:center}
+#mainContent:has(.family-tabs) .family-empty strong{color:#29445b;font-size:13px}
+#mainContent:has(.family-tabs) .family-empty span{color:#7b8997;font-size:11px;line-height:1.5}
+#mainContent:has(.family-tabs) .family-panel .family-form{margin:0;padding:3px 0 0;border:0}
+#mainContent:has(.family-tabs) .family-panel .family-form input{height:46px;border-radius:11px;background:#fff}
+#mainContent:has(.family-tabs) .family-panel .family-form button{min-height:46px;border-radius:11px}
+#mainContent:has(.family-tabs) .family-safety-note{margin-top:14px;font-size:10px;line-height:1.55}
+@media(max-width:420px){#mainContent:has(.family-tabs) .family-card{padding:17px}#mainContent:has(.family-tabs) .family-tabs{gap:4px}#mainContent:has(.family-tabs) .family-tab{font-size:10px;padding:7px 3px}#mainContent:has(.family-tabs) .family-panel{padding:12px}}

@@ -23,7 +23,49 @@ async function show(){
   '<p class="family-safety-note">Seus registros pessoais continuam privados. Criar uma família ou aceitar um convite não compartilha automaticamente compromissos, receitas, despesas ou dívidas. O compartilhamento seletivo será configurado em uma etapa protegida separada.</p>';
   document.querySelector("#familyCreate").onsubmit=async e=>{e.preventDefault();const b=e.currentTarget.querySelector("button");b.disabled=true;try{const {error}=await c.rpc("create_family",{p_name:new FormData(e.currentTarget).get("name")});if(error)throw error;await show();note("Família criada. Você é o administrador.");}catch(x){note(x.message||"Não foi possível criar a família. Confira se a migração SQL foi executada.",true);}finally{b.disabled=false;}};
   document.querySelector("#familyAccept").onsubmit=async e=>{e.preventDefault();const b=e.currentTarget.querySelector("button");b.disabled=true;try{const token=String(new FormData(e.currentTarget).get("token")||"").trim();const {error}=await c.rpc("accept_family_invitation",{p_token:token});if(error)throw error;await show();note("Convite aceito. Você agora faz parte da família.");}catch(x){note(x.message||"Não foi possível aceitar o convite.",true);}finally{b.disabled=false;}};
-  document.querySelectorAll("[data-invite]").forEach(b=>b.onclick=async()=>{const email=prompt("Digite o e-mail exato da pessoa que deseja convidar:");if(!email)return;try{const {data,error}=await c.rpc("invite_family_member",{p_family_id:b.dataset.invite,p_email:email});if(error)throw error;const token=data&&data[0]&&data[0].invitation_token;if(!token)throw new Error("O convite não foi gerado.");const appUrl="https://swagtop411-max.github.io/Agenda-inteligente/";const inviteText="Você foi convidado(a) para a família no Agenda Inteligente!\n\n1. Abra o aplicativo pelo navegador: "+appUrl+"\n2. Entre ou crie sua conta usando este e-mail: "+email+"\n3. Acesse Menu > Família e cole o código abaixo.\n\nCódigo do convite: "+token+"\n\nO código vence em 7 dias. Não é necessário baixar nada pela Play Store; o Agenda Inteligente funciona pelo navegador e pode ser adicionado à tela inicial do celular.";const notice=document.querySelector("#familyNotice");notice.className="auth-message";notice.style.display="block";notice.innerHTML='<strong>Convite gerado!</strong><p>Agora escolha como deseja enviar o convite para '+esc(email)+'.</p><div class="family-invite-actions"><button type="button" class="primary" id="shareFamilyInvite">Compartilhar convite</button><button type="button" class="auth-secondary" id="copyFamilyInvite">Copiar mensagem e código</button></div><small>O código vence em 7 dias.</small>';const shareButton=document.querySelector("#shareFamilyInvite");const copyButton=document.querySelector("#copyFamilyInvite");shareButton.onclick=async()=>{try{if(navigator.share){await navigator.share({title:"Convite — Agenda Inteligente",text:inviteText});}else{await navigator.clipboard.writeText(inviteText);note("Convite copiado. Agora cole a mensagem no WhatsApp.",false);}}catch(x){if(x.name!=="AbortError")note("Não foi possível compartilhar. Use Copiar mensagem e código.",true);}};copyButton.onclick=async()=>{try{await navigator.clipboard.writeText(inviteText);note("Convite copiado! Agora abra o WhatsApp e cole a mensagem para "+email+".",false);}catch(x){const area=document.createElement("textarea");area.value=inviteText;area.setAttribute("readonly","");area.style.position="fixed";area.style.opacity="0";document.body.appendChild(area);area.select();const copied=document.execCommand("copy");area.remove();if(copied)note("Convite copiado! Agora cole a mensagem no WhatsApp.",false);else note("Não foi possível copiar automaticamente. Tente compartilhar pelo botão acima.",true);}};}catch(x){note(x.message||"Não foi possível gerar o convite.",true);}});
+  document.querySelectorAll("[data-invite]").forEach(b=>b.onclick=()=>{
+   const parent=b.closest(".family-group");
+   const current=parent.querySelector(".family-invite-form");
+   if(current){current.remove();b.textContent="Convidar";return;}
+   const form=document.createElement("form");
+   form.className="family-invite-form";
+   form.innerHTML='<label>E-mail da pessoa convidada</label><input type="email" name="email" autocomplete="email" required placeholder="nome@exemplo.com"><div class="family-invite-form-actions"><button type="submit" class="primary">Gerar convite</button><button type="button" class="auth-secondary" data-cancel-invite>Cancelar</button></div>';
+   parent.appendChild(form);
+   b.textContent="Fechar";
+   form.querySelector("[data-cancel-invite]").onclick=()=>{form.remove();b.textContent="Convidar";};
+   form.onsubmit=async e=>{
+    e.preventDefault();
+    const submit=form.querySelector('[type="submit"]');
+    const email=String(new FormData(form).get("email")||"").trim().toLowerCase();
+    if(!email)return;
+    submit.disabled=true;submit.textContent="Gerando...";
+    try{
+     const {data,error}=await c.rpc("invite_family_member",{p_family_id:b.dataset.invite,p_email:email});
+     if(error)throw error;
+     const token=data&&data[0]&&data[0].invitation_token;
+     if(!token)throw new Error("O convite não foi gerado.");
+     const expiry=data[0].invitation_expires_at?new Date(data[0].invitation_expires_at):null;
+     const expiryText=expiry&&!Number.isNaN(expiry.getTime())?expiry.toLocaleDateString("pt-BR"):"em 7 dias";
+     const appUrl="https://swagtop411-max.github.io/Agenda-inteligente/";
+     const inviteText="Você foi convidado(a) para a família no Agenda Inteligente!\\n\\n1. Abra o aplicativo pelo navegador: "+appUrl+"\\n2. Entre ou crie sua conta usando este e-mail: "+email+"\\n3. Acesse Menu > Família e cole o código abaixo.\\n\\nCódigo do convite: "+token+"\\nValidade até: "+expiryText+"\\n\\nNão precisa baixar pela Play Store. Você pode adicionar o aplicativo à tela inicial do celular.";
+     form.innerHTML='<div class="family-invite-success"><strong>Convite gerado!</strong><p>Envie para '+esc(email)+'. Validade: '+esc(expiryText)+'.</p><div class="family-invite-form-actions"><button type="button" class="primary" data-share-invite>Compartilhar convite</button><button type="button" class="auth-secondary" data-copy-invite>Copiar mensagem e código</button></div></div>';
+     form.querySelector("[data-share-invite]").onclick=async()=>{
+      try{
+       if(navigator.share)await navigator.share({title:"Convite — Agenda Inteligente",text:inviteText});
+       else{await navigator.clipboard.writeText(inviteText);note("Convite copiado! Abra o WhatsApp e cole a mensagem.",false);}
+      }catch(x){if(x.name!=="AbortError")note("Não foi possível compartilhar. Use Copiar mensagem e código.",true);}
+     };
+     form.querySelector("[data-copy-invite]").onclick=async()=>{
+      try{await navigator.clipboard.writeText(inviteText);note("Convite copiado! Abra o WhatsApp e cole a mensagem.",false);}
+      catch(x){
+       const area=document.createElement("textarea");area.value=inviteText;area.setAttribute("readonly","");area.style.position="fixed";area.style.opacity="0";document.body.appendChild(area);area.select();const copied=document.execCommand("copy");area.remove();
+       note(copied?"Convite copiado! Abra o WhatsApp e cole a mensagem.":"Não foi possível copiar automaticamente. Tente compartilhar pelo botão acima.",!copied);
+      }
+     };
+    }catch(x){note(x.message||"Não foi possível gerar o convite.",true);submit.disabled=false;submit.textContent="Tentar novamente";}
+   };
+   form.querySelector("input").focus();
+  });;
  }catch(x){document.querySelector("#familyContent").innerHTML='<p class="muted">A base de Família ainda precisa ser preparada no Supabase. Execute o arquivo <strong>supabase/family.sql</strong> no SQL Editor do projeto e depois atualize o aplicativo.</p>';note(x.message||"Não foi possível carregar as famílias.",true);}
 }
 document.addEventListener("click",e=>{const b=e.target.closest('[data-view="family"]');if(!b)return;e.preventDefault();e.stopImmediatePropagation();show();const sidebar=document.querySelector(".sidebar");if(sidebar)sidebar.classList.remove("menu-open");const toggle=document.querySelector("#menuToggle");if(toggle){toggle.setAttribute("aria-expanded","false");toggle.querySelector(".menu-toggle-icon").textContent="☰";toggle.querySelector("span:last-child").textContent="Menu";}},true);

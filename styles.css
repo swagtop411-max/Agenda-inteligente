@@ -109,3 +109,8 @@
 .finance-entry-actions .text-button{background:#edf5fb!important;color:#246d9f!important;border:1px solid #e0edf7!important}
 .finance-entry-actions .danger-button{background:#fff1f0!important;color:#b42318!important;border:1px solid #fce1df!important}
 @media(max-width:420px){.finance-entry{padding:15px!important}.finance-entry-icon{width:40px!important;height:40px!important;flex-basis:40px!important}.finance-entry-info{margin-left:52px!important;gap:7px!important}.finance-entry-amount{font-size:17px!important}.finance-entry-actions button{min-height:44px!important}}
+
+/* Fix: only rotate the chevron, never the summary label */
+.finance-entry-details summary span:first-child{transform:none!important;display:inline-block!important}
+.finance-entry-details summary .finance-chevron{display:inline-block!important;transform:none!important}
+.finance-entry-details[open] summary .finance-chevron{transform:rotate(180deg)!important}

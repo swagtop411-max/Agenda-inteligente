@@ -94,11 +94,11 @@ function drawFinancialAlerts(selected,incomes,expenses,incomeTotal,expenseTotal,
  const essentialCategories=["Alimentação","Moradia","Saúde","Contas e serviços"];
  const essentialSpend=expenses.filter(x=>essentialCategories.includes(x.category||"Outros")).reduce((n,x)=>n+(Number(x.amount)||0),0);
  const pending=expenses.filter(x=>!x.paid);
- const overdue=pending.filter(x=>String(x.date||"")<todayKey);
+ const overdue=selected===todayKey.slice(0,7)?pending.filter(x=>String(x.date||"")<todayKey):[];
  const ratio=incomeTotal>0?expenseTotal/incomeTotal*100:(expenseTotal>0?100:0);
  const priorityDebts=db.debts.filter(x=>(x.type==="mandatory"||x.type==="essential")&&Number(x.balance)>0);
  const priorityMinimum=priorityDebts.reduce((n,x)=>n+(Number(x.minimum)||0),0);
- const highRiskSoon=db.debts.filter(x=>Number(x.balance)>0&&x.risk==="high"&&x.date&&x.date>=todayKey&&x.date<=addDays(todayKey,7));
+ const highRiskSoon=selected===todayKey.slice(0,7)?db.debts.filter(x=>Number(x.balance)>0&&x.risk==="high"&&x.date&&x.date>=todayKey&&x.date<=addDays(todayKey,7)):[];
  const budget=parseMoney(localStorage.getItem("agendaDebtBudget")||"");
  const alerts=[];
  if(incomeTotal<=0&&expenseTotal>0)alerts.push({level:"warning",title:"Renda não registrada",text:"Há despesas cadastradas, mas nenhuma receita neste mês. Registre sua renda para melhorar a análise."});

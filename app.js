@@ -173,6 +173,10 @@ function openDebtPayment(debtId,paymentId=""){
   if(!(nextAmount>0)){alert("Informe um valor maior que zero.");return;}
   const available=Number(debt.balance)||0,oldAmount=existing?(Number(existing.amount)||0):0;
   if(nextAmount>available+oldAmount+0.001){alert("O valor informado ultrapassa o saldo da dívida.");return;}
+  if(!f.alreadyRecorded){
+   const duplicate=db.bills.some(bill=>String(bill.date||"")===String(f.date||"")&&Math.round((Number(bill.amount)||0)*100)===Math.round(nextAmount*100));
+   if(duplicate&&!confirm("Já existe uma despesa com a mesma data e valor em Contas e despesas. Se for este mesmo pagamento, marque a caixa para evitar duplicidade. Deseja incluir mesmo assim?"))return;
+  }
   if(existing){
    debt.balance=Math.max(0,Math.round((available+oldAmount-nextAmount)*100)/100);
    existing.amount=nextAmount;existing.date=f.date;existing.note=f.note.trim();existing.includeInFinance=!f.alreadyRecorded;

@@ -236,7 +236,7 @@ document.addEventListener("change",e=>{
  if(e.target.id==="importBackup"){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();reader.onload=()=>{
-   try{const parsed=JSON.parse(reader.result),data=parsed.data||parsed;if(!Array.isArray(data.events)||!Array.isArray(data.bills)||!Array.isArray(data.cards))throw new Error("Formato inválido");if(confirm("Restaurar este backup? Os dados atuais serão substituídos.")){db={events:data.events,bills:data.bills,cards:data.cards,incomes:Array.isArray(data.incomes)?data.incomes:[],budgets:data.budgets&&typeof data.budgets==="object"?data.budgets:{}};db.bills.forEach(x=>{if(!x.category)x.category="Outros";});save();alert("Backup restaurado com sucesso.");}}
+   try{const parsed=JSON.parse(reader.result),data=parsed.data||parsed;if(!Array.isArray(data.events)||!Array.isArray(data.bills)||!Array.isArray(data.cards))throw new Error("Formato inválido");if(confirm("Restaurar este backup? Os dados atuais serão substituídos.")){db={events:data.events,bills:data.bills,cards:data.cards,incomes:Array.isArray(data.incomes)?data.incomes:[],budgets:data.budgets&&typeof data.budgets==="object"?data.budgets:{},debts:Array.isArray(data.debts)?data.debts:[]};db.bills.forEach(x=>{if(!x.category)x.category="Outros";});save();alert("Backup restaurado com sucesso.");}}
    catch(err){alert("Não foi possível restaurar: arquivo inválido.");}
   };reader.readAsText(file);e.target.value="";
  }

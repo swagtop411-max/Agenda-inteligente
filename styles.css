@@ -271,3 +271,20 @@
 .debt-history summary{font-size:12px;color:#3579a8;font-weight:600;cursor:pointer}
 .debt-history-row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;font-size:11px;color:#718096;border-bottom:1px solid #f0f3f6}
 .debt-history-row b{color:#16805f;white-space:nowrap}
+
+.debt-progress-card{margin:14px 0 12px;padding:16px;border:1px solid #e5edf3;border-radius:16px;background:linear-gradient(145deg,#f7fbff,#fff)}
+.debt-progress-head,.debt-progress-foot{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.debt-progress-head{font-size:13px;color:#52677a;font-weight:600}
+.debt-progress-head strong{font-size:21px;color:#168b73;font-variant-numeric:tabular-nums}
+.debt-progress-track,.debt-month-track{height:10px;background:#e9eff4;border-radius:99px;overflow:hidden}
+.debt-progress-track{margin:12px 0 9px}
+.debt-progress-track i,.debt-month-track i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#169b83,#54b89b);transition:width .25s ease}
+.debt-progress-foot{font-size:11px;color:#718096}
+.recovery-income{margin-top:10px}
+.debt-progress-history{margin:18px 0;padding:14px;border:1px solid #e8edf2;border-radius:15px;background:#fff}
+.debt-progress-history h3{font-size:14px;margin:0 0 13px;color:#263b4d}
+.debt-month-row{display:grid;grid-template-columns:48px minmax(50px,1fr) auto;align-items:center;gap:9px;margin:11px 0;font-size:11px;color:#718096}
+.debt-month-track{height:8px}
+.debt-month-row b{font-size:11px;color:#263b4d;white-space:nowrap;font-variant-numeric:tabular-nums}
+.debt-history-empty{font-size:12px;color:#81909d;margin:12px 0}
+@media(max-width:380px){.debt-month-row{grid-template-columns:40px minmax(35px,1fr) auto;gap:6px}.debt-month-row b{font-size:10px}}

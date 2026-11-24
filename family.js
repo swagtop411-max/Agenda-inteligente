@@ -8,6 +8,7 @@ function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&l
 function note(text,error){const el=document.querySelector("#familyNotice");if(el){el.textContent=text;el.className="auth-message"+(error?" error":"");el.style.display="block";}}
 function ready(){if(!client){if(!window.supabase)throw new Error("A conexão ainda está carregando. Atualize a página.");client=window.supabase.createClient(URL,KEY);}return client;}
 async function show(){
+ activeView="family";
  document.querySelectorAll("[data-view]").forEach(x=>x.classList.toggle("active",x.dataset.view==="family"));
  main.innerHTML='<div class="auth-wrap"><section class="auth-card family-card"><p class="eyebrow">ORGANIZAÇÃO COMPARTILHADA</p><h2>Família</h2><p class="muted">Crie um grupo familiar e convide pessoas que tenham sua própria conta no Agenda Inteligente.</p><div id="familyNotice" class="auth-message" style="display:none"></div><div id="familyContent"><p class="muted">Carregando...</p></div></section></div>';
  try{

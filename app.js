@@ -17,40 +17,63 @@ function openForm(type){
  const configs={
   event:{title:"Novo compromisso",fields:[["title","Nome do compromisso","text"],["date","Data","date"],["time","Horário","time"]]},
   bill:{title:"Nova conta",fields:[["title","Descrição","text"],["amount","Valor total (R$)","number"],["date","Primeiro vencimento","date"],["installments","Parcelas","number"]]},
-  purchase:{title:"Registrar compra",fields:[["title","O que comprou?","text"],["amount","Valor total (R$)","number"],["installments","Parcelas","number"],["date","Primeiro vencimento","date"],["cardId","Cartão (opcional)","select"]]},
+  purchase:{title:"Registrar compra",fields:[["title","O que comprou?","text"],["amount","Valor total da compra (R$)","number"],["installments","Parcelas","number"],["date","Primeiro vencimento","date"],["cardId","Cartão (opcional)","select"]]},
   card:{title:"Cadastrar cartão",fields:[["title","Nome do cartão","text"],["limit","Limite total (R$)","number"],["closing","Dia de fechamento","number"],["due","Dia de vencimento","number"]]}
  };
- const cfg=configs[type];
- if(!cfg){alert("Tipo de registro inválido.");return;}
+ const cfg=configs[type];if(!cfg){alert("Tipo de registro inválido.");return;}
  const root=$("#modalRoot");
  const fields=cfg.fields.map(([name,label,inputType])=>{
-  if(inputType==="select"){
-   const options=db.cards.map(card=>'<option value="'+esc(card.id)+'">'+esc(card.title)+'</option>').join("");
-   return '<div class="field"><label>'+label+'</label><select name="cardId"><option value="">Sem cartão</option>'+options+'</select></div>';
-  }
-  const installmentAttrs=name==="installments"?'min="1" max="120" value="1"':"";
-  const numberAttrs=inputType==="number"&&name!=="installments"?'min="0" step="0.01"':"";
-  return '<div class="field"><label>'+label+'</label><input name="'+name+'" type="'+inputType+'" required '+installmentAttrs+' '+numberAttrs+'></div>';
+  if(inputType==="select"){const options=db.cards.map(card=>'<option value="'+esc(card.id)+'">'+esc(card.title)+'</option>').join("");return '<div class="field"><label>'+label+'</label><select name="cardId"><option value="">Sem cartão</option>'+options+'</select></div>';}
+  const attrs=name==="installments"?'min="1" max="120" value="1"':(inputType==="number"?'min="0" step="0.01"':"");
+  return '<div class="field"><label>'+label+'</label><input name="'+name+'" type="'+inputType+'" required '+attrs+'></div>';
  }).join("");
- root.innerHTML='<div class="modal-backdrop"><div class="modal"><div class="modal-head"><h2>'+cfg.title+'</h2><button class="close" type="button">×</button></div><form id="recordForm">'+fields+'<button class="primary" type="submit">Salvar registro</button></form></div></div>';
+ const editor=(type==="purchase"||type==="bill")?'<section class="installment-editor"><label class="edit-toggle"><input type="checkbox" id="editInstallments"> Quero ajustar manualmente o valor de cada parcela</label><p class="muted" id="installmentHint">A divisão será feita automaticamente. Você poderá ativar o ajuste para corrigir juros ou diferenças.</p><div id="installmentValues" class="hidden"></div><strong id="installmentSum" class="hidden"></strong></section>':"";
+ root.innerHTML='<div class="modal-backdrop"><div class="modal"><div class="modal-head"><h2>'+cfg.title+'</h2><button class="close" type="button">×</button></div><form id="recordForm">'+fields+editor+'<button class="primary" type="submit">Salvar registro</button></form></div></div>';
  root.querySelector(".close").onclick=()=>{root.innerHTML="";};
  root.querySelector(".modal-backdrop").onclick=e=>{if(e.target.classList.contains("modal-backdrop"))root.innerHTML="";};
- root.querySelector("#recordForm").onsubmit=e=>{
+ const form=root.querySelector("#recordForm");
+ const toggle=root.querySelector("#editInstallments");
+ const values=root.querySelector("#installmentValues");
+ const sumLabel=root.querySelector("#installmentSum");
+ const hint=root.querySelector("#installmentHint");
+ function cents(n){return Math.round((Number(n)||0)*100);}
+ function renderInstallments(){
+  if(!toggle||!toggle.checked)return;
+  const total=cents(form.elements.amount.value),count=Math.max(1,Math.min(120,Number(form.elements.installments.value)||1));
+  const base=Math.floor(total/count),remainder=total-base*count;
+  values.innerHTML=Array.from({length:count},(_,i)=>'<div class="field"><label>Valor da parcela '+(i+1)+'</label><input class="installment-value" name="installment_'+(i+1)+'" type="number" min="0" step="0.01" value="'+((base+(i===count-1?remainder:0))/100).toFixed(2)+'" required></div>').join("");
+  values.classList.remove("hidden");sumLabel.classList.remove("hidden");updateSum();
+ }
+ function updateSum(){
+  if(!toggle||!toggle.checked)return;
+  const sum=[...values.querySelectorAll(".installment-value")].reduce((n,input)=>n+cents(input.value),0);
+  sumLabel.textContent="Soma das parcelas: "+money(sum/100);
+  hint.textContent="Ajuste os valores livremente. A soma das parcelas será o total registrado.";
+ }
+ if(toggle){
+  toggle.onchange=()=>{if(toggle.checked)renderInstallments();else{values.innerHTML="";values.classList.add("hidden");sumLabel.classList.add("hidden");hint.textContent="A divisão será feita automaticamente. Você poderá ativar o ajuste para corrigir juros ou diferenças.";}};
+  form.elements.amount.oninput=()=>{if(toggle.checked)renderInstallments();};
+  form.elements.installments.oninput=()=>{if(toggle.checked)renderInstallments();};
+  values.oninput=updateSum;
+ }
+ form.onsubmit=e=>{
   e.preventDefault();
-  const f=Object.fromEntries(new FormData(e.target));
+  const f=Object.fromEntries(new FormData(form));
   const id=crypto.randomUUID();
   if(type==="event")db.events.push({id,...f});
   if(type==="card")db.cards.push({id,...f,limit:+f.limit,closing:+f.closing,due:+f.due});
   if(type==="bill"||type==="purchase"){
-   const total=+f.amount;
    const count=Math.max(1,Math.min(120,+f.installments||1));
-   const part=Math.floor(total/count*100)/100;
-   for(let i=0;i<count;i++){
-    db.bills.push({id:crypto.randomUUID(),groupId:id,title:f.title,amount:i===count-1?Math.round((total-part*(count-1))*100)/100:part,date:addMonths(f.date,i),part:i+1,count,paid:false,cardId:f.cardId||"",kind:type});
+   let amounts;
+   if(toggle&&toggle.checked){
+    amounts=Array.from({length:count},(_,i)=>Math.round((+f["installment_"+(i+1)]||0)*100)/100);
+   }else{
+    const total=cents(f.amount),base=Math.floor(total/count);
+    amounts=Array.from({length:count},(_,i)=>(base+(i===count-1?total-base*count:0))/100);
    }
+   amounts.forEach((amount,i)=>db.bills.push({id:crypto.randomUUID(),groupId:id,title:f.title,amount,date:addMonths(f.date,i),part:i+1,count,paid:false,cardId:f.cardId||"",kind:type}));
   }
-  root.innerHTML="";
-  save();
+  root.innerHTML="";save();
  };
 }
 function exportBackup(){

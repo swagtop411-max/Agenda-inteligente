@@ -1,5 +1,5 @@
 {
-  "name": "Agenda Inteligente",
+  "name": "Agenda Inteligente — Organização pessoal e familiar",
   "short_name": "Agenda",
   "start_url": "./",
   "scope": "./",
@@ -7,7 +7,7 @@
   "background_color": "#f2f5f9",
   "theme_color": "#102a43",
   "lang": "pt-BR",
-  "description": "Agenda, compromissos e organização financeira em um só lugar.",
+  "description": "Organize compromissos, agenda e finanças. Acesse sua conta e sua família em um só lugar.",
   "icons": [
     {
       "src": "icon.svg",
@@ -15,5 +15,21 @@
       "type": "image/svg+xml",
       "purpose": "any"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Abrir agenda",
+      "short_name": "Agenda",
+      "url": "./"
+    },
+    {
+      "name": "Área da família",
+      "short_name": "Família",
+      "url": "./"
+    }
+  ],
+  "categories": [
+    "productivity",
+    "lifestyle"
   ]
 }

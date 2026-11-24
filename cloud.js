@@ -100,7 +100,7 @@ async function syncNow(showUI){
   localStorage.setItem(KEY,JSON.stringify(db));
   lastMessage="Sincronização concluída. "+db.events.length+" compromisso(s), "+db.bills.length+" parcela(s), "+db.cards.length+" cartão(ões), "+db.incomes.length+" receita(s) e "+db.debts.length+" dívida(s) disponíveis.";
   if(showUI)renderAuth();
-  render();
+  if(activeView!=="family")render();
  }catch(err){lastMessage="Falha na sincronização: "+(err.message||"verifique conexão, login e permissões.");if(showUI)renderAuth();console.error("Agenda Inteligente sync:",err);}
  finally{syncBusy=false;}
 }

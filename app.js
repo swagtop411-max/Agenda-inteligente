@@ -108,6 +108,41 @@ function openDebtForm(){
  bindMoneyInputs(root);root.querySelector(".close").onclick=()=>root.innerHTML="";root.querySelector(".modal-backdrop").onclick=e=>{if(e.target.classList.contains("modal-backdrop"))root.innerHTML="";};
  root.querySelector("#debtForm").onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.currentTarget));db.debts.push({id:crypto.randomUUID(),title:f.title,type:f.type,balance:parseMoney(f.balance),minimum:parseMoney(f.minimum),interest:Number(f.interest)||0,date:f.date,risk:f.risk});root.innerHTML="";save();};
 }
+function simulateDebtStrategy(items,monthlyBudget,method){
+ const rows=items.map(x=>({id:x.id,title:x.title,balance:Math.round(Math.max(0,Number(x.balance)||0)*100),minimum:Math.round(Math.max(0,Number(x.minimum)||0)*100),rate:Math.max(0,Number(x.interest)||0)/100}));
+ const original=rows.reduce((sum,x)=>sum+x.balance,0);if(!rows.length)return {months:0,interest:0,paid:0,success:true};
+ const budget=Math.round(Math.max(0,monthlyBudget)*100);if(budget<=0)return {success:false,reason:"Informe um valor disponível para quitar dívidas."};
+ let interest=0,paid=0;
+ for(let month=1;month<=360;month++){
+  const active=rows.filter(x=>x.balance>0);if(!active.length)return {success:true,months:month-1,interest:interest/100,paid:paid/100};
+  let interestThisMonth=0;
+  for(const x of active){const charge=Math.round(x.balance*x.rate);x.balance+=charge;interest+=charge;interestThisMonth+=charge;}
+  let remaining=budget;
+  const minimumTotal=active.reduce((sum,x)=>sum+Math.min(x.balance,x.minimum),0);
+  if(minimumTotal>budget)return {success:false,reason:"O valor disponível não cobre as parcelas mínimas das dívidas negociáveis. Negocie os pagamentos mínimos antes de simular."};
+  for(const x of active){const amount=Math.min(x.balance,x.minimum);x.balance-=amount;remaining-=amount;paid+=amount;}
+  const sorted=rows.filter(x=>x.balance>0).sort((a,b)=>method==="avalanche"?(b.rate-a.rate||a.balance-b.balance):(a.balance-b.balance||b.rate-a.rate));
+  for(const x of sorted){if(remaining<=0)break;const amount=Math.min(remaining,x.balance);x.balance-=amount;remaining-=amount;paid+=amount;}
+  if(rows.every(x=>x.balance<=0))return {success:true,months:month,interest:interest/100,paid:paid/100};
+  if(budget<=interestThisMonth)return {success:false,reason:"Com este orçamento, os juros podem impedir a quitação. Considere negociar taxas menores."};
+ }
+ return {success:false,reason:"Não foi possível projetar a quitação em até 30 anos. Reveja juros e orçamento."};
+}
+function debtStrategyComparison(debts,budget){
+ const fixed=debts.filter(x=>x.type==="mandatory"||x.type==="essential").reduce((sum,x)=>sum+Math.max(0,Number(x.minimum)||0),0);
+ const negotiable=debts.filter(x=>x.type==="negotiable"&&Number(x.balance)>0);
+ const available=Math.max(0,budget-fixed);
+ const unknown=negotiable.some(x=>!Number(x.interest));
+ const snow=simulateDebtStrategy(negotiable,available,"snowball"),ava=simulateDebtStrategy(negotiable,available,"avalanche");
+ const base='<div class="strategy-heading"><h3>Compare dois caminhos</h3><p class="muted">Após reservar '+money(fixed)+' para obrigações essenciais e prioritárias, restam '+money(available)+' por mês para as dívidas negociáveis.</p></div>';
+ if(!negotiable.length)return base+'<p class="muted">Cadastre pelo menos uma dívida negociável com saldo em aberto para comparar estratégias.</p>';
+ if(budget<fixed)return base+'<p class="recovery-guidance">O valor reservado ainda não cobre os pagamentos prioritários. Negocie primeiro essas obrigações.</p>';
+ const card=(name,subtitle,sim)=>'<article class="strategy-card"><strong>'+name+'</strong><small>'+subtitle+'</small>'+(sim.success?'<div class="strategy-numbers"><span><b>'+sim.months+'</b> meses</span><span><b>'+money(sim.interest)+'</b> juros estimados</span><span><b>'+money(sim.paid)+'</b> total estimado</span></div>':'<p class="strategy-warning">'+sim.reason+'</p>')+'</article>';
+ let html=base+'<div class="strategy-cards">'+card("Bola de neve","Prioriza o menor saldo",snow)+card("Avalanche","Prioriza a maior taxa de juros",ava)+'</div>';
+ if(snow.success&&ava.success){const saving=Math.max(0,snow.interest-ava.interest);html+='<p class="recovery-guidance">'+(saving>0?'Neste cenário, a avalanche economizaria aproximadamente '+money(saving)+' em juros.':'Neste cenário, as estratégias apresentam custos semelhantes.')+'</p>';}
+ html+='<p class="recovery-note">Simulação ilustrativa com juros mensais constantes, pagamentos mínimos informados e valor mensal fixo. Não inclui multas, tarifas, descontos, reajustes ou novas compras. '+(unknown?'Atenção: dívidas sem juros informados foram calculadas com taxa zero; o resultado pode subestimar o custo real. ':'')+'Contas essenciais e obrigações prioritárias são reservadas antes da simulação, mas seus saldos não são projetados aqui. Não é uma proposta de renegociação.</p>';
+ return html;
+}
 function drawDebtRecovery(month,incomeTotal){
  const list=$("#debtItems"),overview=$("#recoveryOverview"),result=$("#debtPlanResult");if(!list||!overview||!result)return;
  const types={mandatory:"Obrigação prioritária",essential:"Conta essencial fixa",negotiable:"Dívida negociável",flexible:"Gasto que posso reduzir"};
@@ -125,6 +160,8 @@ function drawDebtRecovery(month,incomeTotal){
  const strategy=negotiable.slice().sort((a,b)=>(Number(b.interest)||0)-(Number(a.interest)||0));
  strategy.forEach(x=>{const pay=Math.min(remaining,Number(x.minimum)||Number(x.balance)||0);remaining-=pay;allocations.push({x,pay,short:Math.max(0,(Number(x.minimum)||Number(x.balance)||0)-pay)});});
  result.innerHTML=!debts.length?'<p class="muted">Cadastre as dívidas acima para visualizar uma proposta.</p>':!budget?'<p class="muted">Informe quanto consegue reservar por mês. O aplicativo distribuirá o valor conforme as prioridades cadastradas.</p>':'<div class="plan-summary"><small>Valor mensal informado</small><strong>'+money(budget)+'</strong><small>Parcelas mínimas prioritárias cadastradas: '+money(required)+'</small></div>'+allocations.map(a=>'<div class="plan-allocation"><span>'+esc(a.x.title)+'<small>'+(a.x.type==="negotiable"?"Negociar juros e condições":"Proteger obrigação prioritária")+'</small></span><b>'+money(a.pay)+'</b></div>').join("")+'<p class="recovery-guidance">'+(budget<required?'Atenção: o valor reservado não cobre todas as parcelas mínimas prioritárias. Procure os credores antes do vencimento para negociar.':'A proposta respeita primeiro as obrigações essenciais cadastradas. Confirme juros, encargos e condições diretamente com cada credor antes de aceitar acordos.')+'</p>';
+ if(budget>0&&debts.length)result.innerHTML+=debtStrategyComparison(debts,budget);
+
 }
 function editInstallment(id){
  const current=db.bills.find(x=>x.id===id);if(!current)return;

@@ -188,3 +188,58 @@
 .cashflow-movement-values b.positive-text{color:#16805f}
 .cashflow-movement-values b.pending-text{color:#956c13}
 @media(max-width:420px){.cashflow-metrics{gap:6px}.cashflow-metric{padding:11px 8px}.cashflow-metric small{font-size:10px}.cashflow-balance-grid{gap:7px}.cashflow-balance-grid>div{padding:11px}.cashflow-bars>div{grid-template-columns:62px minmax(0,1fr) auto;gap:7px}.cashflow-bars b{font-size:11px}.cashflow-movement{grid-template-columns:30px minmax(0,1fr) auto;gap:8px}.cashflow-movement-values b{font-size:11px}}
+
+/* Financial calendar */
+.calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.calendar-labels{margin:12px 0 7px}
+.calendar-labels span{text-align:center;font-size:11px;color:#7b8996;font-weight:600;padding:5px 0}
+.calendar-day{min-height:48px;border:1px solid #e7edf2;background:#fbfcfd;border-radius:11px;color:#24384b;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:5px 2px}
+.calendar-day b{font-size:13px}
+.calendar-day.has-items{background:#f1f7fc;border-color:#d8e7f3}
+.calendar-day.selected{background:#173b58;color:#fff;border-color:#173b58}
+.calendar-empty{min-height:48px}
+.calendar-dots{height:5px;display:flex;gap:3px}
+.calendar-dots i,.calendar-legend i{width:6px;height:6px;border-radius:50%;display:inline-block}
+.calendar-dots .in,.calendar-legend .in{background:#169b82}
+.calendar-dots .out,.calendar-legend .out{background:#df806c}
+.calendar-legend{display:flex;gap:16px;flex-wrap:wrap;margin:12px 0;color:#718096;font-size:11px}
+.calendar-legend span{display:flex;align-items:center;gap:6px}
+#calendarDayDetails{margin-top:12px;padding:13px;border-radius:14px;background:#f6f9fc}
+#calendarDayDetails h3{font-size:14px;margin:0 0 8px;color:#20384d}
+.calendar-detail-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #e7edf2}
+.calendar-detail-row:last-child{border-bottom:0}
+.calendar-detail-row>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.calendar-detail-row strong{font-size:13px;overflow-wrap:anywhere}
+.calendar-detail-row small{font-size:11px;color:#7b8996}
+.calendar-detail-row>b{white-space:nowrap;font-size:12px}
+/* Debt recovery planner */
+.recovery-panel .panel-heading{align-items:flex-start;gap:12px}
+.recovery-panel .panel-heading .primary{white-space:nowrap;flex-shrink:0}
+.recovery-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0}
+.recovery-stats>div{padding:12px 10px;border:1px solid #e5ebf0;border-radius:13px;background:#f8fafc;display:flex;flex-direction:column;gap:7px;min-width:0}
+.recovery-stats small{font-size:10px;line-height:1.35;color:#748392}
+.recovery-stats strong{font-size:clamp(13px,3.4vw,18px);color:#20384d;overflow-wrap:anywhere}
+.recovery-guidance{padding:12px 13px;border-radius:12px;background:#eef5fb;color:#456176;font-size:12px;line-height:1.55}
+#debtItems h3,.recovery-planner h3{font-size:15px;color:#20384d;margin:18px 0 10px}
+.debt-item{padding:14px 0;border-bottom:1px solid #edf1f5}
+.debt-item:last-child{border-bottom:0}
+.debt-item-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.debt-item-head>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.debt-item-head strong{font-size:14px;color:#20384d;overflow-wrap:anywhere}
+.debt-item-head small,.debt-item-meta{font-size:11px;color:#7b8996}
+.debt-item-head>b{font-size:14px;white-space:nowrap;color:#20384d}
+.debt-item-meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:8px}
+.risk-high{color:#b42318;font-weight:700}
+.risk-medium{color:#9a6a08;font-weight:700}
+.risk-low{color:#16805f;font-weight:700}
+.debt-item .danger-button{margin-top:9px}
+.recovery-planner{margin-top:16px;padding:14px;border-radius:15px;background:#f7f9fc}
+.plan-summary{display:flex;flex-direction:column;gap:5px;padding:12px;border-radius:12px;background:#eaf3fb;margin:10px 0}
+.plan-summary small{font-size:11px;color:#63798b}
+.plan-summary strong{font-size:21px;color:#20384d}
+.plan-allocation{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid #e5ebf0}
+.plan-allocation>span{font-size:13px;font-weight:600;color:#20384d;display:flex;flex-direction:column;gap:4px}
+.plan-allocation small{font-size:10px;color:#7b8996;font-weight:400}
+.plan-allocation>b{font-size:13px;white-space:nowrap;color:#16805f}
+.recovery-note{font-size:10px;line-height:1.5;color:#8793a0;margin-top:14px}
+@media(max-width:420px){.recovery-stats{gap:5px}.recovery-stats>div{padding:10px 7px}.recovery-stats small{font-size:9px}.recovery-panel .panel-heading{flex-wrap:wrap}.recovery-panel .panel-heading .primary{font-size:12px;padding:10px 12px}.calendar-grid{gap:4px}.calendar-day{min-height:43px;border-radius:9px}}

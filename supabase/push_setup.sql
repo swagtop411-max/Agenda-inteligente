@@ -1,6 +1,8 @@
--- Agenda Inteligente: agendamento do envio de notificações push
--- Execute somente depois de publicar a Edge Function send-push e configurar seus secrets.
--- Substitua os dois valores entre aspas antes de executar.
+-- Agenda Inteligente: agendamento do envio de notificações push.
+-- Execute somente depois de publicar a Edge Function send-push e configurar os secrets.
+-- Substitua o valor de exemplo pela chave cadastrada como APP_SERVICE_ROLE_KEY.
+-- Nunca publique esta chave em arquivos do aplicativo ou em repositórios.
+
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
 create extension if not exists supabase_vault with schema vault;
@@ -11,8 +13,8 @@ select vault.create_secret(
 );
 
 select vault.create_secret(
-  'COLE_AQUI_A_CHAVE_SERVICE_ROLE_DO_SUPABASE',
-  'agenda_push_service_role'
+  'COLE_AQUI_O_VALOR_DO_SECRET_APP_SERVICE_ROLE_KEY',
+  'agenda_push_app_secret'
 );
 
 select cron.schedule(
@@ -20,10 +22,20 @@ select cron.schedule(
   '*/15 * * * *',
   $$
   select net.http_post(
-    url := (select decrypted_secret from vault.decrypted_secrets where name = 'agenda_push_function_url' limit 1),
+    url := (
+      select decrypted_secret
+      from vault.decrypted_secrets
+      where name = 'agenda_push_function_url'
+      limit 1
+    ),
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'agenda_push_service_role' limit 1)
+      'x-app-secret', (
+        select decrypted_secret
+        from vault.decrypted_secrets
+        where name = 'agenda_push_app_secret'
+        limit 1
+      )
     ),
     body := '{}'::jsonb
   );
